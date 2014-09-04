@@ -73,4 +73,30 @@ class SharedStorage
 		$table->setIncremental(true);
 		$table->save();
 	}
+
+
+	public function getSavedLocations($locations)
+	{
+		$savedLocations = array();
+		foreach($this->getTableRows(SharedStorage::LOCATIONS_TABLE_NAME, 'name', $locations) as $row) {
+			$savedLocations[$row['name']] = array('latitude' => $row['latitude'], 'longitude' => $row['longitude']);
+		}
+		return $savedLocations;
+	}
+
+	public function getSavedForecasts($coords, $date)
+	{
+		$dateHour = date('YmdH', strtotime($date));
+		$savedKeys = array();
+		foreach ($coords as $c) {
+			$savedKeys[] = md5(sprintf('%s.%s.%s', $dateHour, $c['latitude'], $c['longitude']));
+		}
+
+		$savedForecasts = array();
+		foreach($this->getTableRows(SharedStorage::FORECASTS_TABLE_NAME, 'key', $savedKeys) as $row) {
+			$savedForecasts[$row['key']] = array('date' => $row['date'], 'latitude' => $row['latitude'],
+				'longitude' => $row['longitude'], 'temperature' => $row['temperature'], 'weather' => $row['weather']);
+		}
+		return $savedForecasts;
+	}
 } 
