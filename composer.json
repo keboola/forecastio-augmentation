@@ -1,8 +1,8 @@
 {
     "name": "keboola/foreacastio-extractor-bundle",
     "type": "symfony-bundle",
-    "description": "Keboola Weather Extractor Bundle",
-    "keywords": ["keboola", "weather"],
+    "description": "Keboola Forecast.io Weather Extractor Bundle",
+    "keywords": ["keboola", "weather", "forecast.io"],
     "authors": [
         {
             "name": "Jakub Matejka",
@@ -12,11 +12,12 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@bitbucket.org:keboola/weather-extractor-bundle.git"
+            "url": "git@bitbucket.org:keboola/extractor-bundle.git"
         }
     ],
     "require": {
-        "keboola/extractor-bundle": "~0.8.11"
+        "keboola/extractor-bundle": "~0.8.11",
+        "willdurand/geocoder": "@stable"
     },
     "require-dev": {
     },
@@ -33,9 +34,9 @@
     },
     "minimum-stability": "stable",
     "autoload": {
-        "psr-0": { "Keboola\\WeatherExtractorBundle": "" }
+        "psr-0": { "Keboola\\ForecastIoExtractorBundle": "" }
     },
-    "target-dir": "Keboola/WeatherExtractorBundle",
+    "target-dir": "Keboola/ForecastIoExtractorBundle",
     "extra": {
         "symfony-app-dir": "vendor/keboola/syrup/app",
         "symfony-web-dir": "vendor/keboola/syrup/web",
