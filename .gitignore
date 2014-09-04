@@ -2,6 +2,7 @@
 parameters.yml
 composer.phar
 vendor
+Command/DebugCommand.php
 
 # osx noise
 .DS_Store
