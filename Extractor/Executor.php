@@ -22,6 +22,9 @@ class Executor
 	protected $forecastIoKey;
 	protected $googleApiKey;
 
+	const TEMPERATURE_UNITS_SI = 'si';
+	const TEMPERATURE_UNITS_US = 'us';
+
 	public function __construct(SharedStorage $sharedStorage, $googleApiKey, $forecastIoKey)
 	{
 		$this->sharedStorage = $sharedStorage;
@@ -30,7 +33,7 @@ class Executor
 	}
 
 
-	public function getForecast($coords, $date)
+	public function getForecast($coords, $date, $units=self::TEMPERATURE_UNITS_SI)
 	{
 		$dateHour = date('YmdH', strtotime($date));
 
@@ -83,6 +86,9 @@ class Executor
 		$finalResult = array();
 		foreach ($coords as $loc => $c) {
 			$res = $result[$c['latitude'] . ':' . $c['longitude']];
+			if ($units == self::TEMPERATURE_UNITS_US) {
+				$res['temperature'] = ($res['temperature'] * (9/5)) + 32;
+			}
 			unset($res['location']);
 			$finalResult[$loc] = $res;
 		}
