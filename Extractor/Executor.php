@@ -116,7 +116,7 @@ class Executor
 	{
 		$adapter = new GuzzleHttpAdapter();
 		$chain = new ChainProvider(array(
-			new GoogleMapsProvider($adapter, null, null, true, $this->forecastIoKey)
+			new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey)
 		));
 		$geocoder = new Geocoder($chain);
 		try {
