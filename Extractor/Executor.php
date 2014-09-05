@@ -13,6 +13,9 @@ use Geocoder\Geocoder;
 use Geocoder\HttpAdapter\GuzzleHttpAdapter;
 use Geocoder\Provider\ChainProvider;
 use Geocoder\Provider\GoogleMapsProvider;
+use Geocoder\Provider\MapQuestProvider;
+use Geocoder\Provider\NominatimProvider;
+use Geocoder\Provider\YandexProvider;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Response;
 
@@ -122,7 +125,9 @@ class Executor
 	{
 		$adapter = new GuzzleHttpAdapter();
 		$chain = new ChainProvider(array(
-			new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey)
+			new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey),
+			new YandexProvider($adapter),
+			new NominatimProvider($adapter, 'http://nominatim.openstreetmap.org')
 		));
 		$geocoder = new Geocoder($chain);
 		try {
