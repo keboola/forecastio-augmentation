@@ -24,15 +24,17 @@ class Executor
 	protected $sharedStorage;
 	protected $forecastIoKey;
 	protected $googleApiKey;
+	protected $mapQuestKey;
 
 	const TEMPERATURE_UNITS_SI = 'si';
 	const TEMPERATURE_UNITS_US = 'us';
 
-	public function __construct(SharedStorage $sharedStorage, $googleApiKey, $forecastIoKey)
+	public function __construct(SharedStorage $sharedStorage, $googleApiKey, $forecastIoKey, $mapQuestKey)
 	{
 		$this->sharedStorage = $sharedStorage;
 		$this->forecastIoKey = $forecastIoKey;
 		$this->googleApiKey = $googleApiKey;
+		$this->mapQuestKey = $mapQuestKey;
 	}
 
 
@@ -126,8 +128,9 @@ class Executor
 		$adapter = new GuzzleHttpAdapter();
 		$chain = new ChainProvider(array(
 			new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey),
+			new MapQuestProvider($adapter, $this->mapQuestKey),
 			new YandexProvider($adapter),
-			new NominatimProvider($adapter, 'http://nominatim.openstreetmap.org')
+			new NominatimProvider($adapter, 'http://nominatim.openstreetmap.org'),
 		));
 		$geocoder = new Geocoder($chain);
 		try {
