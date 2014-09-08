@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "keboola/extractor-bundle": "~0.8.11",
+        "syrup/component-bundle": "~1.7.0",
         "willdurand/geocoder": "@stable"
     },
     "require-dev": {

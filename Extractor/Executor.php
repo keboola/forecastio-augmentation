@@ -10,7 +10,6 @@ namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
 
 use Geocoder\Geocoder;
-use Geocoder\HttpAdapter\GuzzleHttpAdapter;
 use Geocoder\Provider\ChainProvider;
 use Geocoder\Provider\GoogleMapsProvider;
 use Geocoder\Provider\MapQuestProvider;
@@ -18,6 +17,7 @@ use Geocoder\Provider\NominatimProvider;
 use Geocoder\Provider\YandexProvider;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Response;
+use Keboola\ForecastIoExtractorBundle\Geocoder\GuzzleAdapter;
 
 class Executor
 {
@@ -67,9 +67,8 @@ class Executor
 
 		$forecastToSave = array();
 		if (count($apiData)) {
-			$forecast = new Forecast($this->forecastIoKey, 1);
-			$response = $forecast->getData($apiData);
-			foreach ($response as $r) {
+			$forecast = new Forecast($this->forecastIoKey, 10);
+			foreach ($forecast->getData($apiData) as $r) {
 				/** @var Response $r */
 				$curr = $r->getCurrently();
 				$result[$r->getLatitude() . ':' . $r->getLongitude()]['temperature'] = $curr->getTemperature();
@@ -125,7 +124,8 @@ class Executor
 
 	public function getAddressCoordinates($address)
 	{
-		$adapter = new GuzzleHttpAdapter();
+		$adapter = new GuzzleAdapter();
+
 		$chain = new ChainProvider(array(
 			new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey),
 			new MapQuestProvider($adapter, $this->mapQuestKey),

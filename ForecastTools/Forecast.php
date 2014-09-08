@@ -29,6 +29,11 @@
  */
 namespace Keboola\ForecastIoExtractorBundle\ForecastTools;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Event\CompleteEvent;
+use GuzzleHttp\Event\ErrorEvent;
+use GuzzleHttp\Subscriber\Retry\RetrySubscriber;
+
 class Forecast
 {
 
@@ -157,64 +162,34 @@ class Forecast
 	 */
 	private function _processWithMultiCurl($request_urls)
 	{
+		$client = new Client();
+		$retry = new RetrySubscriber([
+			'filter' => RetrySubscriber::createChainFilter(array(
+					RetrySubscriber::createCurlFilter(),
+					RetrySubscriber::createStatusFilter()
+				))
+		]);
+		$client->getEmitter()->attach($retry);
 
-		$threads = $this->_threads; // requests to handle simultaneously
+		$requests = array();
+		foreach ($request_urls as $url) {
+			$requests[] = $client->createRequest('GET', $url);
+		}
+
 		$responses = array();
-		$iterations = floor(count($request_urls) / $threads);
-		if (count($request_urls) % $threads) {
-			$iterations++;
-		}
-
-		$ch = array();
-		for ($j = 0; $j < $iterations; $j++) {
-
-			$request_urls_slice = array_slice($request_urls, $j * $threads, $threads);
-			$responses_part = array();
-
-			$mh = curl_multi_init();
-			foreach ($request_urls_slice as $i => $url) {
-				$ch[$i] = curl_init($url);
-				curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
-				curl_multi_add_handle($mh, $ch[$i]);
-			}
-			do {
-				$execReturnValue = curl_multi_exec($mh, $runningHandles);
-			} while ($execReturnValue == CURLM_CALL_MULTI_PERFORM);
-			while ($runningHandles && $execReturnValue == CURLM_OK) {
-				$numberReady = curl_multi_select($mh);
-				if ($numberReady != -1) {
-					do {
-						$execReturnValue = curl_multi_exec($mh, $runningHandles);
-					} while ($execReturnValue == CURLM_CALL_MULTI_PERFORM);
+		$client->sendAll($requests, array(
+			'parallel' => $this->_threads,
+			'complete' => function (CompleteEvent $event) use (&$responses) {
+					echo 'Completed request to ' . $event->getRequest()->getUrl() . "\n";
+					$responses[] = $event->getResponse()->getBody();
+				},
+			'error' => function (ErrorEvent $event) {
+					echo 'Request failed: ' . $event->getRequest()->getUrl() . "\n";
+					echo $event->getException();
 				}
-			}
-			if ($execReturnValue != CURLM_OK) {
-				$err = "Multi cURL read error $execReturnValue";
-				trigger_error(__FILE__ . ':L' . __LINE__ . ": $err\n");
-			}
-
-			foreach ($request_urls_slice as $i => $url) {
-
-				$curlError = curl_error($ch[$i]);
-				if ($curlError == "") {
-					$responses_part[$i] = curl_multi_getcontent($ch[$i]);
-				} else {
-					$responses_part[$i] = false;
-					$err = "Multi cURL error on handle $i: $curlError";
-					trigger_error(__FILE__ . ':L' . __LINE__ . ": $err\n");
-				}
-				curl_multi_remove_handle($mh, $ch[$i]);
-				curl_close($ch[$i]);
-
-			}
-			curl_multi_close($mh);
-
-			$responses = array_merge($responses, $responses_part);
-
-		}
+		));
 
 		return $responses;
-
 	}
 
 	/**
