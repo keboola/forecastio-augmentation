@@ -10,6 +10,7 @@ namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
 use Keboola\StorageApi\Client as StorageApiClient,
 	Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\ClientException;
 
 class SharedStorage
 {
@@ -18,7 +19,8 @@ class SharedStorage
 	 */
 	protected $storageApiClient;
 
-	const BUCKET_ID = 'in.c-ex-forecastio';
+	const BUCKET_NAME = 'ex-forecastio-storage';
+	const BUCKET_ID = 'in.c-ex-forecastio-storage';
 	const LOCATIONS_TABLE_NAME = 'locations';
 	const FORECASTS_TABLE_NAME = 'forecasts';
 
@@ -57,11 +59,23 @@ class SharedStorage
 			$exportOptions = array_merge($exportOptions, $options);
 		}
 
-		$csv = $this->storageApiClient->exportTable(self::BUCKET_ID . '.' . $tableName, null, $exportOptions);
-		return StorageApiClient::parseCsv($csv, true);
+		try {
+			$csv = $this->storageApiClient->exportTable(self::BUCKET_ID . '.' . $tableName, null, $exportOptions);
+			return StorageApiClient::parseCsv($csv, true);
+		} catch (ClientException $e) {
+			if ($e->getCode() == 404) {
+				if (!$this->storageApiClient->bucketExists(self::BUCKET_ID)) {
+					$this->storageApiClient->createBucket(self::BUCKET_NAME, 'in', 'ForecastIo Extractor Shared Storage');
+				}
+				$this->updateTable($tableName);
+				return array();
+			} else {
+				throw $e;
+			}
+		}
 	}
 
-	public function updateTable($tableName, $data)
+	public function updateTable($tableName, $data=array())
 	{
 		if (!isset($this->tables[$tableName])) {
 			throw new \Exception('Storage table ' . $tableName . ' not found');
@@ -69,8 +83,10 @@ class SharedStorage
 
 		$table = new StorageApiTable($this->storageApiClient, self::BUCKET_ID . '.' . $tableName, null, $this->tables[$tableName]['primaryKey']);
 		$table->setHeader($this->tables[$tableName]['columns']);
-		$table->setFromArray($data);
-		$table->setIncremental(true);
+		if (count($data)) {
+			$table->setFromArray($data);
+			$table->setIncremental(true);
+		}
 		$table->save();
 	}
 

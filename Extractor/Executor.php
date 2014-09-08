@@ -90,11 +90,14 @@ class Executor
 		$finalResult = array();
 		foreach ($coords as $loc => $c) {
 			$res = $result[$c['latitude'] . ':' . $c['longitude']];
-			if ($units == self::TEMPERATURE_UNITS_US) {
-				$res['temperature'] = ($res['temperature'] * (9/5)) + 32;
-			}
-			unset($res['location']);
-			$finalResult[$loc] = $res;
+			$finalResult[] = array(
+				'address' => $loc,
+				'latitude' => $c['latitude'],
+				'longitude' => $c['longitude'],
+				'date' => $date,
+				'temperature' => ($units == self::TEMPERATURE_UNITS_US)? ($res['temperature'] * (9/5)) + 32 : $res['temperature'],
+				'weather' => $res['weather']
+			);
 		}
 		return $finalResult;
 	}

@@ -180,12 +180,10 @@ class Forecast
 		$client->sendAll($requests, array(
 			'parallel' => $this->_threads,
 			'complete' => function (CompleteEvent $event) use (&$responses) {
-					echo 'Completed request to ' . $event->getRequest()->getUrl() . "\n";
 					$responses[] = $event->getResponse()->getBody();
 				},
 			'error' => function (ErrorEvent $event) {
-					echo 'Request failed: ' . $event->getRequest()->getUrl() . "\n";
-					echo $event->getException();
+					throw new Exception('Request to Forecast.io failed: ' . $event->getRequest()->getUrl() . ' - Error: ' . $event->getException()->getMessage());
 				}
 		));
 
