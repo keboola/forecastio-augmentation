@@ -20,11 +20,11 @@ class UserStorage
 
 	const BUCKET_NAME = 'ex-forecastio';
 	const BUCKET_ID = 'in.c-ex-forecastio';
-	const FORECASTS_TABLE_NAME = 'forecasts';
+	const CONDITIONS_TABLE_NAME = 'conditions';
 
 	public $tables = array(
-		self::FORECASTS_TABLE_NAME => array(
-			'columns' => array('address', 'date', 'latitude', 'longitude', 'temperature', 'weather'),
+		self::CONDITIONS_TABLE_NAME => array(
+			'columns' => array('address', 'latitude', 'longitude', 'date', 'key', 'value'),
 			'primaryKey' => null,
 			'indices' => array()
 		)
@@ -36,9 +36,9 @@ class UserStorage
 		$this->storageApiClient = $storageApiClient;
 	}
 
-	public function saveForecasts($data)
+	public function saveConditions($data)
 	{
-		$this->updateTable(self::FORECASTS_TABLE_NAME, $data);
+		$this->updateTable(self::CONDITIONS_TABLE_NAME, $data);
 	}
 
 	public function updateTable($tableName, $data)

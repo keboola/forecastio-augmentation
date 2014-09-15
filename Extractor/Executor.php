@@ -38,66 +38,89 @@ class Executor
 	}
 
 
-	public function getForecast($coords, $date, $units=self::TEMPERATURE_UNITS_SI)
+	public function getConditions($coordinates, $date, $conditions, $units=self::TEMPERATURE_UNITS_SI)
 	{
-		$dateHour = date('YmdH', strtotime($date));
-
-		$savedForecasts = $this->sharedStorage->getSavedForecasts($coords, $date);
-
+		$savedConditions = $this->sharedStorage->getSavedConditions($coordinates, $date, $conditions);
 		$result = array();
+		$locations = array();
+
 		$apiData = array();
-		foreach ($coords as $loc => $c) {
-			$key = md5(sprintf('%s.%s.%s', $dateHour, $c['latitude'], $c['longitude']));
-			$result[$c['latitude'] . ':' . $c['longitude']] = array(
-				'location' => $loc,
-				'latitude' => $c['latitude'],
-				'longitude' => $c['longitude']
-			);
-			if (!isset($savedForecasts[$key])) {
+		foreach ($coordinates as $address => $c) if ($c['latitude'] != '-' && $c['longitude'] != '-') {
+			$location = $c['latitude'] . ':' . $c['longitude'];
+			if (!isset($savedConditions[$location])) {
 				$apiData[] = array(
 					'latitude' => $c['latitude'],
 					'longitude' => $c['longitude'],
 					'units' => 'si'
 				);
+				$locations[$location] = $address;
 			} else {
-				$result[$c['latitude'] . ':' . $c['longitude']]['temperature'] = $savedForecasts[$key]['temperature'];
-				$result[$c['latitude'] . ':' . $c['longitude']]['weather'] = $savedForecasts[$key]['weather'];
+				foreach ($savedConditions[$location] as $sc) {
+					$result[$c['latitude'] . ':' . $c['longitude']][$sc['key']] = $sc['value'];
+				}
 			}
 		}
 
-		$forecastToSave = array();
 		if (count($apiData)) {
 			$forecast = new Forecast($this->forecastIoKey, 10);
 			foreach ($forecast->getData($apiData) as $r) {
 				/** @var Response $r */
-				$curr = $r->getCurrently();
-				$result[$r->getLatitude() . ':' . $r->getLongitude()]['temperature'] = $curr->getTemperature();
-				$result[$r->getLatitude() . ':' . $r->getLongitude()]['weather'] = $curr->getSummary();
-				$forecastToSave[] = array(
-					md5(sprintf('%s.%s.%s', $dateHour, $r->getLatitude(), $r->getLongitude())),
-					$date,
-					$r->getLatitude(),
-					$r->getLongitude(),
-					$curr->getTemperature(),
-					$curr->getSummary()
-				);
-			}
-			if (count($forecastToSave)) {
-				$this->sharedStorage->updateTable(SharedStorage::FORECASTS_TABLE_NAME, $forecastToSave);
+				$allConditions = (array)$r->getRawData()->currently;
+				unset($allConditions['time']);
+				foreach ($allConditions as $k => $v) {
+					$this->sharedStorage->saveCondition($r->getLatitude(), $r->getLongitude(), $date, $k, $v);
+					if (in_array($k, $conditions)) {
+						$result[$r->getLatitude() . ':' . $r->getLongitude()][$k] = $v;
+					}
+				}
 			}
 		}
 
 		$finalResult = array();
-		foreach ($coords as $loc => $c) {
+		foreach ($coordinates as $address => $c) {
 			$res = $result[$c['latitude'] . ':' . $c['longitude']];
-			$finalResult[] = array(
-				'address' => $loc,
-				'latitude' => $c['latitude'],
-				'longitude' => $c['longitude'],
-				'date' => $date,
-				'temperature' => ($units == self::TEMPERATURE_UNITS_US)? ($res['temperature'] * (9/5)) + 32 : $res['temperature'],
-				'weather' => $res['weather']
-			);
+			foreach ($res as $k => $v) {
+
+				if ($units == self::TEMPERATURE_UNITS_US) {
+					switch ($k) {
+						case 'temperature':
+						case 'temperatureMin':
+						case 'temperatureMax':
+						case 'apparentTemperature':
+						case 'dewPoint':
+							// From Fahrenheit To Celsius
+							$v = ($v * (9/5)) + 32;
+							break;
+						case 'precipAccumulation':
+							// From centimeters To inches
+							$v = $v * 0.393701;
+							break;
+						case 'nearestStormDistance':
+						case 'visibility':
+							// From kilometers To miles
+							$v = $v * 0.621371;
+							break;
+						case 'precipIntensity':
+						case 'precipIntensityMax':
+							// From millimeters per hour To inches per hour
+							$v = $v * 0.03937;
+							break;
+						case 'windSpeed':
+							// From meters per second To miles per hour
+							$v = $v * 2.2369362920544025;
+							break;
+					}
+				}
+
+				$finalResult[] = array(
+					'address' => $address,
+					'latitude' => $c['latitude'],
+					'longitude' => $c['longitude'],
+					'date' => $date,
+					'key' => $k,
+					'value' => $v
+				);
+			}
 		}
 		return $finalResult;
 	}
@@ -112,15 +135,18 @@ class Executor
 		foreach ($locations as $loc) {
 			if (!isset($savedLocations[$loc])) {
 				$location = $this->getAddressCoordinates($loc);
-				$coords = $location? $this->getForecastLocation($location) : array('latitude' => '-', 'longitude' => '-');
-				$savedLocations[$loc] = $coords;
-				$locationsToSave[] = array($loc, $coords['latitude'], $coords['longitude']);
+				$savedLocations[$loc] = $this->getForecastLocation($location);
+				$locationsToSave[] = array(
+					'name' => $loc,
+					'latitude' => $savedLocations[$loc]['latitude'],
+					'longitude' => $savedLocations[$loc]['longitude']
+				);
 			}
 			$result[$loc] = $savedLocations[$loc];
 		}
 
-		if (count($locationsToSave)) {
-			$this->sharedStorage->updateTable(SharedStorage::LOCATIONS_TABLE_NAME, $locationsToSave);
+		if (count($locationsToSave)) foreach ($locationsToSave as $loc) {
+			$this->sharedStorage->saveLocation($loc['name'], $loc['latitude'], $loc['longitude']);
 		}
 		return $result;
 	}
@@ -135,9 +161,9 @@ class Executor
 			new YandexProvider($adapter),
 			new NominatimProvider($adapter, 'http://nominatim.openstreetmap.org'),
 		));
-		$geocoder = new Geocoder($chain);
+		$geoCoder = new Geocoder($chain);
 		try {
-			$geocode = $geocoder->geocode($address);
+			$geocode = $geoCoder->geocode($address);
 			return $geocode->getCoordinates();
 		} catch (\Exception $e) {
 			echo $e->getMessage();
@@ -145,11 +171,14 @@ class Executor
 		}
 	}
 
-	public function getForecastLocation($coords)
+	public function getForecastLocation($coordinates)
 	{
-		return array(
-			'latitude' => round($coords[0], 1),
-			'longitude' => round($coords[1], 1)
+		return $coordinates? array(
+			'latitude' => round($coordinates[0], 2),
+			'longitude' => round($coordinates[1], 2)
+		) : array(
+			'latitude' => '-',
+			'longitude' => '-'
 		);
 	}
 
