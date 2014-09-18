@@ -10,6 +10,8 @@ namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
 use Keboola\StorageApi\Client as StorageApiClient,
 	Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\TableExporter;
+use Syrup\ComponentBundle\Filesystem\Temp;
 
 class UserStorage
 {
@@ -17,6 +19,10 @@ class UserStorage
 	 * @var \Keboola\StorageApi\Client
 	 */
 	protected $storageApiClient;
+	/**
+	 * @var \Syrup\ComponentBundle\Filesystem\Temp
+	 */
+	protected $temp;
 
 	const BUCKET_NAME = 'ex-forecastio';
 	const BUCKET_ID = 'in.c-ex-forecastio';
@@ -31,9 +37,10 @@ class UserStorage
 	);
 
 
-	public function __construct(StorageApiClient $storageApiClient)
+	public function __construct(StorageApiClient $storageApiClient, Temp $temp)
 	{
 		$this->storageApiClient = $storageApiClient;
+		$this->temp = $temp;
 	}
 
 	public function saveConditions($data)
@@ -55,5 +62,25 @@ class UserStorage
 		$table->setFromArray($data);
 		$table->setIncremental(true);
 		$table->save();
+	}
+
+	public function getTableColumn($tableId, $column)
+	{
+		$params = array(
+			'format' => 'escaped',
+			'columns' => array($column)
+		);
+
+		$file = $this->temp->createTmpFile();
+		$fileName = $file->getRealPath();
+		$exporter = new TableExporter($this->storageApiClient);
+		$exporter->exportTable($tableId, $fileName, $params);
+
+		$csv = new \Keboola\Csv\CsvFile($fileName);
+		$result = array();
+		foreach ($csv as $i => $r) if ($i > 0) {
+			$result[] = $r[0];
+		}
+		return $result;
 	}
 } 
