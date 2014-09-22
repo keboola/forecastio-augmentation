@@ -8,19 +8,11 @@
 
 namespace Keboola\ForecastIoExtractorBundle;
 
-use Keboola\ExtractorBundle\Extractor\Extractors\JsonExtractor;
+use Syrup\ComponentBundle\Component\Component;
 
-class ForecastIoExtractor extends JsonExtractor
+class ForecastIoExtractor extends Component
 {
-	protected $name = 'forecastio';
+	protected $_name = 'forecastio';
+	protected $_prefix = 'ex';
 
-	protected function run($config)
-	{
-		$forecast = new \Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast('695f92cee04b6a962501f7f4db1d89e2');
-		$response = $forecast->getData(37.770452, -122.424923);echo 'x' . PHP_EOL.PHP_EOL;print_r($response);die();
-		$curr = $response->getCurrently();
-		echo $curr->getTime() . PHP_EOL.PHP_EOL;
-		echo $curr->getTemperature() . PHP_EOL.PHP_EOL;
-		die();
-	}
 } 

@@ -10,7 +10,9 @@ namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
 use Keboola\StorageApi\Client as StorageApiClient,
 	Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\Client;
 use Syrup\ComponentBundle\Exception\SyrupComponentException;
+use Syrup\ComponentBundle\Service\StorageApi\StorageApiService;
 
 class ConfigurationException extends SyrupComponentException
 {
@@ -30,9 +32,9 @@ class Configuration
 	const BUCKET_ID = 'sys.c-ex-forecastio';
 	const TABLE_NAME = 'configuration';
 
-	public function __construct(StorageApiClient $storageApiClient)
+	public function __construct(Client $storageApi)
 	{
-		$this->storageApiClient = $storageApiClient;
+		$this->storageApiClient = $storageApi;
 	}
 
 	public function getConfiguration()

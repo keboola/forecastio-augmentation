@@ -18,25 +18,47 @@ use Geocoder\Provider\YandexProvider;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Response;
 use Keboola\ForecastIoExtractorBundle\Geocoder\GuzzleAdapter;
+use Syrup\ComponentBundle\Filesystem\Temp;
+use Syrup\ComponentBundle\Job\Metadata\Job;
 
-class Executor
+class Executor extends \Syrup\ComponentBundle\Job\Executor
 {
-	protected $sharedStorage;
 	protected $forecastIoKey;
 	protected $googleApiKey;
 	protected $mapQuestKey;
 
+	protected $sharedStorage;
+	protected $temp;
+	protected $userStorage;
+	protected $configuration;
+
 	const TEMPERATURE_UNITS_SI = 'si';
 	const TEMPERATURE_UNITS_US = 'us';
 
-	public function __construct(SharedStorage $sharedStorage, $googleApiKey, $forecastIoKey, $mapQuestKey)
+	public function __construct(AppConfiguration $appConfiguration, SharedStorage $sharedStorage, Temp $temp)
 	{
 		$this->sharedStorage = $sharedStorage;
-		$this->forecastIoKey = $forecastIoKey;
-		$this->googleApiKey = $googleApiKey;
-		$this->mapQuestKey = $mapQuestKey;
+		$this->temp = $temp;
+
+		$this->forecastIoKey = $appConfiguration->forecastio_key;
+		$this->googleApiKey = $appConfiguration->google_key;
+		$this->mapQuestKey = $appConfiguration->mapquest_key;
 	}
 
+	public function execute(Job $job)
+	{
+		$this->configuration = new Configuration($this->storageApi);
+		$this->userStorage = new UserStorage($this->storageApi, $this->temp);
+
+		foreach ($this->configuration->getConfiguration() as $config) {
+			$locations = $this->userStorage->getTableColumn($config['tableId'], $config['column']);
+
+			$coordinates = $this->getCoordinates($locations);
+			$result = $this->getConditions($coordinates, date('c'), $config['conditions'], $config['units']);
+
+			$this->userStorage->saveConditions($result);
+		}
+	}
 
 	public function getConditions($coordinates, $date, $conditions, $units=self::TEMPERATURE_UNITS_SI)
 	{

@@ -17,9 +17,9 @@ class SharedStorage
 	 */
 	protected $db;
 
-	public function __construct(Connection $db)
+	public function __construct(\Doctrine\Bundle\DoctrineBundle\Registry $doctrine)
 	{
-		$this->db = $db;
+		$this->db = $doctrine->getConnection();
 	}
 
 	public function getSavedLocations($locations)

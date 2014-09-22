@@ -8,8 +8,8 @@
 
 namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
-use Keboola\StorageApi\Client as StorageApiClient,
-	Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\Client;
 use Keboola\StorageApi\TableExporter;
 use Syrup\ComponentBundle\Filesystem\Temp;
 
@@ -37,9 +37,9 @@ class UserStorage
 	);
 
 
-	public function __construct(StorageApiClient $storageApiClient, Temp $temp)
+	public function __construct(Client $storageApi, Temp $temp)
 	{
-		$this->storageApiClient = $storageApiClient;
+		$this->storageApiClient = $storageApi;
 		$this->temp = $temp;
 	}
 
