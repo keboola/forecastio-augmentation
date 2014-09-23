@@ -60,7 +60,7 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 		}
 	}
 
-	public function getConditions($coordinates, $date, $conditions, $units=self::TEMPERATURE_UNITS_SI)
+	public function getConditions($coordinates, $date, $conditions=null, $units=self::TEMPERATURE_UNITS_SI)
 	{
 		$savedConditions = $this->sharedStorage->getSavedConditions($coordinates, $date, $conditions);
 		$result = array();
@@ -91,7 +91,7 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 				unset($allConditions['time']);
 				foreach ($allConditions as $k => $v) {
 					$this->sharedStorage->saveCondition($r->getLatitude(), $r->getLongitude(), $date, $k, $v);
-					if (in_array($k, $conditions)) {
+					if (!$conditions || in_array($k, $conditions)) {
 						$result[$r->getLatitude() . ':' . $r->getLongitude()][$k] = $v;
 					}
 				}

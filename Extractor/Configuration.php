@@ -77,7 +77,7 @@ class Configuration
 			$result[] = array(
 				'tableId' => $tableId,
 				'column' => $col[3],
-				'conditions' => explode(',', $t['conditions']),
+				'conditions' => empty($t['conditions'])? null : explode(',', $t['conditions']),
 				'units' => $t['units']? $t['units'] : 'si'
 			);
 		}

@@ -41,15 +41,21 @@ class SharedStorage
 		));
 	}
 
-	public function getSavedConditions($coordinates, $date, $conditions)
+	public function getSavedConditions($coordinates, $date, $conditions=null)
 	{
 		$locations = array();
 		foreach ($coordinates as $c) {
 			$locations[] = $c['latitude'] . ':' . $c['longitude'];
 		}
-		$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM conditions WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
-			array($locations, date('Y-m-d H:00:00', strtotime($date)), $conditions),
-			array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR, Connection::PARAM_STR_ARRAY));
+		if ($conditions) {
+			$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM conditions WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
+				array($locations, date('Y-m-d H:00:00', strtotime($date)), $conditions),
+				array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR, Connection::PARAM_STR_ARRAY));
+		} else {
+			$query = $this->db->fetchAll('SELECT * FROM conditions WHERE location IN (?) AND date=?',
+				array($locations, date('Y-m-d H:00:00', strtotime($date))),
+				array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR));
+		}
 		$result = array();
 		foreach ($query as $q) {
 			if (!isset($result[$q['location']]))
