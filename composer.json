@@ -17,7 +17,7 @@
     ],
     "require": {
         "syrup/component-bundle": "~1.7.0",
-        "willdurand/geocoder": "@stable"
+        "league/geotools": "@stable"
     },
     "require-dev": {
         "phpunit/phpunit": "~4.1"

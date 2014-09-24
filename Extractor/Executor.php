@@ -9,6 +9,7 @@
 namespace Keboola\ForecastIoExtractorBundle\Extractor;
 
 
+use Geocoder\Exception\ChainNoResultException;
 use Geocoder\Geocoder;
 use Geocoder\Provider\ChainProvider;
 use Geocoder\Provider\GoogleMapsProvider;
@@ -18,6 +19,7 @@ use Geocoder\Provider\YandexProvider;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast;
 use Keboola\ForecastIoExtractorBundle\ForecastTools\Response;
 use Keboola\ForecastIoExtractorBundle\Geocoder\GuzzleAdapter;
+use Monolog\Logger;
 use Syrup\ComponentBundle\Filesystem\Temp;
 use Syrup\ComponentBundle\Job\Metadata\Job;
 
@@ -27,18 +29,44 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 	protected $googleApiKey;
 	protected $mapQuestKey;
 
+	/**
+	 * @var SharedStorage
+	 */
 	protected $sharedStorage;
+	/**
+	 * @var \Syrup\ComponentBundle\Filesystem\Temp
+	 */
 	protected $temp;
+	/**
+	 * @var \Monolog\Logger
+	 */
+	protected $logger;
+	/**
+	 * @var UserStorage
+	 */
 	protected $userStorage;
+	/**
+	 * @var Configuration
+	 */
 	protected $configuration;
+	/**
+	 * @var EventLogger
+	 */
+	protected $eventLogger;
+	/**
+	 * @var AppConfiguration
+	 */
+	protected $appConfiguration;
 
 	const TEMPERATURE_UNITS_SI = 'si';
 	const TEMPERATURE_UNITS_US = 'us';
 
-	public function __construct(AppConfiguration $appConfiguration, SharedStorage $sharedStorage, Temp $temp)
+	public function __construct(AppConfiguration $appConfiguration, SharedStorage $sharedStorage, Temp $temp, Logger $logger)
 	{
+		$this->appConfiguration = $appConfiguration;
 		$this->sharedStorage = $sharedStorage;
 		$this->temp = $temp;
+		$this->logger = $logger;
 
 		$this->forecastIoKey = $appConfiguration->forecastio_key;
 		$this->googleApiKey = $appConfiguration->google_key;
@@ -47,17 +75,45 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 
 	public function execute(Job $job)
 	{
+		$this->eventLogger = new EventLogger($this->appConfiguration, $this->storageApi, $job->getId());
 		$this->configuration = new Configuration($this->storageApi);
 		$this->userStorage = new UserStorage($this->storageApi, $this->temp);
 
+		$batchCount = 50;
+		$batchNum = 1;
+
 		foreach ($this->configuration->getConfiguration() as $config) {
-			$locations = $this->userStorage->getTableColumn($config['tableId'], $config['column']);
-
-			$coordinates = $this->getCoordinates($locations);
-			$result = $this->getConditions($coordinates, date('c'), $config['conditions'], $config['units']);
-
-			$this->userStorage->saveConditions($result);
+			$locationsFile = $this->userStorage->getTableColumnData($config['tableId'], $config['column']);
+			$locations = array();
+			$firstRow = true;
+			$handle = fopen($locationsFile, "r");
+			if ($handle) {
+				while (($line = fgetcsv($handle)) !== false) {
+					if ($firstRow) {
+						$firstRow = false;
+					} else {
+						$locations[] = $line[0];
+						if (count($locations) >= $batchCount) {
+							$this->process($config, $locations);
+							$locations = array();
+							$this->eventLogger->log('Processed ' . ($batchNum * $batchCount) . ' addresses');
+							$batchNum++;
+						}
+					}
+				}
+			}
+			if (count($locations)) {
+				$this->process($config, $locations);
+			}
+			fclose($handle);
 		}
+	}
+
+	public function process($config, $locations)
+	{
+		$coordinates = $this->getCoordinates($locations);
+		$result = $this->getConditions($coordinates, date('c'), $config['conditions'], $config['units']);
+		$this->userStorage->saveConditions($result);
 	}
 
 	public function getConditions($coordinates, $date, $conditions=null, $units=self::TEMPERATURE_UNITS_SI)
@@ -67,15 +123,17 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 		$locations = array();
 
 		$apiData = array();
-		foreach ($coordinates as $address => $c) if ($c['latitude'] != '-' && $c['longitude'] != '-') {
-			$location = $c['latitude'] . ':' . $c['longitude'];
+		foreach ($coordinates as $address => $c) if ($c['latitude'] != 0 && $c['longitude'] != 0) {
+			$location = round($c['latitude'], 2) . ':' . round($c['longitude'], 2);
 			if (!isset($savedConditions[$location])) {
-				$apiData[] = array(
-					'latitude' => $c['latitude'],
-					'longitude' => $c['longitude'],
-					'units' => 'si'
-				);
-				$locations[$location] = $address;
+				if (!array_key_exists($location, $locations)) {
+					$apiData[] = array(
+						'latitude' => $c['latitude'],
+						'longitude' => $c['longitude'],
+						'units' => 'si'
+					);
+					$locations[$location] = $address;
+				}
 			} else {
 				foreach ($savedConditions[$location] as $sc) {
 					$result[$c['latitude'] . ':' . $c['longitude']][$sc['key']] = $sc['value'];
@@ -99,7 +157,7 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 		}
 
 		$finalResult = array();
-		foreach ($coordinates as $address => $c) {
+		foreach ($coordinates as $address => $c) if ($c['latitude'] != 0 && $c['longitude'] != 0) {
 			$res = $result[$c['latitude'] . ':' . $c['longitude']];
 			foreach ($res as $k => $v) {
 
@@ -150,26 +208,42 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 
 	public function getCoordinates($locations)
 	{
+		$result = array();
 		$savedLocations = $this->sharedStorage->getSavedLocations($locations);
 
-		$result = array();
 		$locationsToSave = array();
 		foreach ($locations as $loc) {
 			if (!isset($savedLocations[$loc])) {
-				$location = $this->getAddressCoordinates($loc);
-				$savedLocations[$loc] = $this->getForecastLocation($location);
-				$locationsToSave[] = array(
-					'name' => $loc,
-					'latitude' => $savedLocations[$loc]['latitude'],
-					'longitude' => $savedLocations[$loc]['longitude']
-				);
+				if (!in_array($loc, $locationsToSave)) {
+					$locationsToSave[] = $loc;
+				}
+			} else {
+				$result[$loc] = $savedLocations[$loc];
 			}
-			$result[$loc] = $savedLocations[$loc];
 		}
 
-		if (count($locationsToSave)) foreach ($locationsToSave as $loc) {
-			$this->sharedStorage->saveLocation($loc['name'], $loc['latitude'], $loc['longitude']);
+		if (count($locationsToSave)) {
+			$adapter = new GuzzleAdapter();
+			$geocoder = new Geocoder();
+			$geocoder->registerProvider(new ChainProvider(array(
+				new GoogleMapsProvider($adapter, null, null, true, $this->googleApiKey),
+				new MapQuestProvider($adapter, $this->mapQuestKey),
+				new YandexProvider($adapter),
+				new NominatimProvider($adapter, 'http://nominatim.openstreetmap.org'),
+			)));
+			$geotools = new \League\Geotools\Geotools();
+
+			$geocoded = $geotools->batch($geocoder)->geocode($locationsToSave)->parallel();
+			foreach ($geocoded as $g) {
+				/** @var \League\Geotools\Batch\BatchGeocoded $g */
+				$result[$g->getQuery()] = array('latitude' => $g->getLatitude(), 'longitude' => $g->getLongitude());
+				$this->sharedStorage->saveLocation($g->getQuery(), $g->getLatitude(), $g->getLongitude());
+				if ($g->getLatitude() == 0 && $g->getLongitude() == 0) {
+					$this->eventLogger->log('No coordinates for address "' . $g->getQuery() . '" found', array(), null, EventLogger::TYPE_WARN);
+				}
+			}
 		}
+
 		return $result;
 	}
 
@@ -187,21 +261,12 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 		try {
 			$geocode = $geoCoder->geocode($address);
 			return $geocode->getCoordinates();
+		} catch (ChainNoResultException $e) {
+			// Ignore no result
 		} catch (\Exception $e) {
-			echo $e->getMessage();
-			return false;
+			$this->logger->alert('Error from Geocoding of address ' . $address, array('e' => $e));
 		}
-	}
-
-	public function getForecastLocation($coordinates)
-	{
-		return $coordinates? array(
-			'latitude' => round($coordinates[0], 2),
-			'longitude' => round($coordinates[1], 2)
-		) : array(
-			'latitude' => '-',
-			'longitude' => '-'
-		);
+		return false;
 	}
 
 } 

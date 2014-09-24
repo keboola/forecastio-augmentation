@@ -64,7 +64,7 @@ class UserStorage
 		$table->save();
 	}
 
-	public function getTableColumn($tableId, $column)
+	public function getTableColumnData($tableId, $column)
 	{
 		$params = array(
 			'format' => 'escaped',
@@ -76,11 +76,6 @@ class UserStorage
 		$exporter = new TableExporter($this->storageApiClient);
 		$exporter->exportTable($tableId, $fileName, $params);
 
-		$csv = new \Keboola\Csv\CsvFile($fileName);
-		$result = array();
-		foreach ($csv as $i => $r) if ($i > 0) {
-			$result[] = $r[0];
-		}
-		return $result;
+		return $fileName;
 	}
 } 

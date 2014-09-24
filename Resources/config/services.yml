@@ -8,4 +8,4 @@ services:
       arguments: [@doctrine]
   ex_forecastio.job_executor:
       class: Keboola\ForecastIoExtractorBundle\Extractor\Executor
-      arguments: [@ex_forecastio.app_configuration, @ex_forecastio.shared_storage, @syrup.temp]
+      arguments: [@ex_forecastio.app_configuration, @ex_forecastio.shared_storage, @syrup.temp, @logger]

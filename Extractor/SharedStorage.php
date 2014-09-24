@@ -45,7 +45,7 @@ class SharedStorage
 	{
 		$locations = array();
 		foreach ($coordinates as $c) {
-			$locations[] = $c['latitude'] . ':' . $c['longitude'];
+			$locations[] = round($c['latitude'], 2) . ':' . round($c['longitude'], 2);
 		}
 		if ($conditions) {
 			$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM conditions WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
@@ -68,7 +68,7 @@ class SharedStorage
 	public function saveCondition($lat, $lon, $date, $key, $value)
 	{
 		$this->db->insert('conditions', array(
-			'location' => $lat . ':' . $lon,
+			'location' => round($lat, 2) . ':' . round($lon, 2),
 			'date' => date('Y-m-d H:00:00', strtotime($date)),
 			'`key`' => $key,
 			'value' => $value
