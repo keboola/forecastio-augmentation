@@ -12,6 +12,4 @@ namespace Keboola\ForecastIoExtractorBundle\Controller;
 class ApiController extends \Syrup\ComponentBundle\Controller\ApiController
 {
 
-
-
 } 

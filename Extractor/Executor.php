@@ -79,7 +79,7 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 		$this->configuration = new Configuration($this->storageApi);
 		$this->userStorage = new UserStorage($this->storageApi, $this->temp);
 
-		$batchCount = 50;
+		$addressesInBatch = 50;
 		$batchNum = 1;
 
 		foreach ($this->configuration->getConfiguration() as $config) {
@@ -93,10 +93,10 @@ class Executor extends \Syrup\ComponentBundle\Job\Executor
 						$firstRow = false;
 					} else {
 						$locations[] = $line[0];
-						if (count($locations) >= $batchCount) {
+						if (count($locations) >= $addressesInBatch) {
 							$this->process($config, $locations);
 							$locations = array();
-							$this->eventLogger->log('Processed ' . ($batchNum * $batchCount) . ' addresses');
+							$this->eventLogger->log('Processed ' . ($batchNum * $addressesInBatch) . ' addresses');
 							$batchNum++;
 						}
 					}

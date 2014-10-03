@@ -66,8 +66,16 @@ class Configuration
 			if (count($col) != 4) {
 				throw new ConfigurationException('Configured column to extract ' . $t['column'] . ' has bad format');
 			}
-			if (!$this->storageApiClient->tableExists($tableId)) {
-				throw new ConfigurationException('Table of configured column to extract ' . $t['column'] . ' does not exist');
+			try {
+				if (!$this->storageApiClient->tableExists($tableId)) {
+					throw new ConfigurationException('Table of configured column to extract ' . $t['column'] . ' does not exist');
+				}
+			} catch (\Keboola\StorageApi\ClientException $e) {
+				if ($e->getCode() == 403) {
+					throw new ConfigurationException('Table of configured column to extract ' . $t['column'] . ' is not accessible with your token');
+				} else {
+					throw $e;
+				}
 			}
 			$tableInfo = $this->storageApiClient->getTable($tableId);
 			if (!in_array($col[3], $tableInfo['columns'])) {
