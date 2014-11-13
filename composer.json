@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "syrup/component-bundle": "~1.7.0",
+        "syrup/component-bundle": "~1.9.32",
         "league/geotools": "@stable"
     },
     "require-dev": {
@@ -24,11 +24,13 @@
     },
     "scripts": {
         "post-install-cmd": [
-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getSharedParameters",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap"
         ],
         "post-update-cmd": [
-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getSharedParameters",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache"
         ]
@@ -41,10 +43,6 @@
     "extra": {
         "symfony-app-dir": "vendor/keboola/syrup/app",
         "symfony-web-dir": "vendor/keboola/syrup/web",
-        "incenteev-parameters": {
-            "keep-outdated": true,
-            "file": "vendor/keboola/syrup/app/config/parameters.yml",
-            "dist-file": "parameters.yml"
-        }
+        "syrup-app-name": "ex-forecastio"
     }
 }
