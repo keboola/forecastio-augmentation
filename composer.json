@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "syrup/component-bundle": "~1.9.32",
+        "syrup/component-bundle": "~1.9.36",
         "league/geotools": "@stable"
     },
     "require-dev": {
