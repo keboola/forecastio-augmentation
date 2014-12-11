@@ -1,12 +1,11 @@
 <?php
 /**
- * Created by IntelliJ IDEA.
- * User: JakubM
- * Date: 18.09.14
- * Time: 14:18
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoExtractorBundle\Extractor;
+namespace Keboola\ForecastIoAugmentation\Service;
 
 
 class AppConfiguration

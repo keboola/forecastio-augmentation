@@ -1,12 +1,11 @@
 <?php
 /**
- * Created by IntelliJ IDEA.
- * User: JakubM
- * Date: 08.09.14
- * Time: 11:48
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoExtractorBundle\Geocoder;
+namespace Keboola\ForecastIoAugmentation\Geocoder;
 
 use Geocoder\HttpAdapter\HttpAdapterInterface;
 use GuzzleHttp\Client;

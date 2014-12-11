@@ -1,12 +1,11 @@
 <?php
 /**
- * Created by IntelliJ IDEA.
- * User: JakubM
- * Date: 04.09.14
- * Time: 14:32
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoExtractorBundle\Extractor;
+namespace Keboola\ForecastIoAugmentation\Service;
 
 use Doctrine\DBAL\Connection;
 

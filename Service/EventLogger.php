@@ -1,12 +1,11 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: JakubM
- * Date: 26.06.14
- * Time: 10:01
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoExtractorBundle\Extractor;
+namespace Keboola\ForecastIoAugmentation\Service;
 
 use Keboola\StorageApi\Client as StorageApiClient,
 	Keboola\StorageApi\Event as StorageApiEvent;

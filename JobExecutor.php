@@ -1,12 +1,11 @@
 <?php
 /**
- * Created by IntelliJ IDEA.
- * User: JakubM
- * Date: 04.09.14
- * Time: 15:19
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoExtractorBundle\Extractor;
+namespace Keboola\ForecastIoAugmentation;
 
 
 use Geocoder\Exception\ChainNoResultException;
@@ -16,14 +15,19 @@ use Geocoder\Provider\GoogleMapsProvider;
 use Geocoder\Provider\MapQuestProvider;
 use Geocoder\Provider\NominatimProvider;
 use Geocoder\Provider\YandexProvider;
-use Keboola\ForecastIoExtractorBundle\ForecastTools\Forecast;
-use Keboola\ForecastIoExtractorBundle\ForecastTools\Response;
-use Keboola\ForecastIoExtractorBundle\Geocoder\GuzzleAdapter;
+use Keboola\ForecastIoAugmentation\ForecastTools\Forecast;
+use Keboola\ForecastIoAugmentation\ForecastTools\Response;
+use Keboola\ForecastIoAugmentation\Geocoder\GuzzleAdapter;
+use Keboola\ForecastIoAugmentation\Service\AppConfiguration;
+use Keboola\ForecastIoAugmentation\Service\Configuration;
+use Keboola\ForecastIoAugmentation\Service\EventLogger;
+use Keboola\ForecastIoAugmentation\Service\SharedStorage;
+use Keboola\ForecastIoAugmentation\Service\UserStorage;
 use Monolog\Logger;
 use Syrup\ComponentBundle\Filesystem\Temp;
 use Syrup\ComponentBundle\Job\Metadata\Job;
 
-class Executor extends \Syrup\ComponentBundle\Job\Executor
+class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 {
 	protected $forecastIoKey;
 	protected $googleApiKey;

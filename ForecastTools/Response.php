@@ -17,7 +17,7 @@
  * @example ../example.php
  */
 
-namespace Keboola\ForecastIoExtractorBundle\ForecastTools;
+namespace Keboola\ForecastIoAugmentation\ForecastTools;
 
 class Response
 {

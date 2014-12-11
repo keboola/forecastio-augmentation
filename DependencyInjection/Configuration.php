@@ -1,6 +1,11 @@
 <?php
+/**
+ * @package forecastio-augmentation
+ * @copyright 2014 Keboola
+ * @author Jakub Matejka <jakub@keboola.com>
+ */
 
-namespace Keboola\ForecastIoExtractorBundle\DependencyInjection;
+namespace Keboola\ForecastIoAugmentation\DependencyInjection;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -18,7 +23,7 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('keboola_forecast_io_extractor');
+        $treeBuilder->root('ag_forecastio');
 
         // Here you should define the parameters that are allowed to
         // configure your bundle. See the documentation linked above for

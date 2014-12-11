@@ -1,11 +1,11 @@
 
 services:
   ex_forecastio.app_configuration:
-      class: Keboola\ForecastIoExtractorBundle\Extractor\AppConfiguration
+      class: Keboola\ForecastIoAugmentation\Service\AppConfiguration
       arguments: [%app_name%, %ex_forecastio%]
   ex_forecastio.shared_storage:
-      class: Keboola\ForecastIoExtractorBundle\Extractor\SharedStorage
+      class: Keboola\ForecastIoAugmentation\Service\SharedStorage
       arguments: [@doctrine]
   ex_forecastio.job_executor:
-      class: Keboola\ForecastIoExtractorBundle\Extractor\Executor
+      class: Keboola\ForecastIoAugmentation\Service\Executor
       arguments: [@ex_forecastio.app_configuration, @ex_forecastio.shared_storage, @syrup.temp, @logger]

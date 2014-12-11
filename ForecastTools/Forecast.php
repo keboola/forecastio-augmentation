@@ -27,7 +27,7 @@
  * @link    http://github.com/CNG/ForecastTools
  * @example ../example.php
  */
-namespace Keboola\ForecastIoExtractorBundle\ForecastTools;
+namespace Keboola\ForecastIoAugmentation\ForecastTools;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Event\CompleteEvent;

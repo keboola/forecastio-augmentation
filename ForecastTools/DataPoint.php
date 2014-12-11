@@ -30,7 +30,7 @@
  * @link    http://github.com/CNG/ForecastTools
  */
 
-namespace Keboola\ForecastIoExtractorBundle\ForecastTools;
+namespace Keboola\ForecastIoAugmentation\ForecastTools;
 
 class DataPoint
 {

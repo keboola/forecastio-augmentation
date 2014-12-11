@@ -2,7 +2,7 @@
 /**
  * @author Jakub Matejka <jakub@keboola.com>
  */
-namespace Keboola\ForecastIoExtractorBundle\Tests;
+namespace Keboola\ForecastIoAugmentation\Tests;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase,
 	Symfony\Bundle\FrameworkBundle\Console\Application,

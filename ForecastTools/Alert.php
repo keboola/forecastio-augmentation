@@ -14,7 +14,7 @@
  * @link    http://github.com/CNG/ForecastTools
  * @example ../example.php
  */
-namespace Keboola\ForecastIoExtractorBundle\ForecastTools;
+namespace Keboola\ForecastIoAugmentation\ForecastTools;
 
 class Alert
 {
