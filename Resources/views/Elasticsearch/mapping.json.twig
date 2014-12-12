@@ -1,30 +1,12 @@
 {% extends 'SyrupComponentBundle:Elasticsearch:mappingDefault.json.twig' %}
 
 {% block params %}
-<<<<<<< HEAD
     "params": {
         "dynamic": "strict",
         "properties": {
-            "tableId": {
-                "type": "string"
-            },
-            "latitude": {
-                "type": "string"
-            },
-            "longitude": {
+            "account": {
                 "type": "string"
             }
         }
     },
 {% endblock %}
-=======
-"params": {
-    "dynamic": "strict",
-    "properties": {
-        "account": {
-            "type": "string"
-        }
-    }
-},
-{% endblock %}
->>>>>>> a86a302850dcd48b238985219638b6086968a5e6
