@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS `forecastio_cache`;
 CREATE TABLE `forecastio_cache` (
   `location` varchar(255) NOT NULL DEFAULT '',
   `date` datetime NOT NULL,
