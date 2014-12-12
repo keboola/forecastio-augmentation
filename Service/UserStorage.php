@@ -7,9 +7,14 @@
 
 namespace Keboola\ForecastIoAugmentation\Service;
 
+use Keboola\Csv\CsvFile;
+use Keboola\StorageApi\ClientException;
 use Keboola\StorageApi\Table as StorageApiTable;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\TableExporter;
+use Symfony\Component\Process\Process;
+use Syrup\ComponentBundle\Exception\SyrupComponentException;
+use Syrup\ComponentBundle\Exception\UserException;
 use Syrup\ComponentBundle\Filesystem\Temp;
 
 class UserStorage
@@ -23,16 +28,15 @@ class UserStorage
 	 */
 	protected $temp;
 
-	const BUCKET_NAME = 'ex-forecastio';
-	const BUCKET_ID = 'in.c-ex-forecastio';
+	protected $files;
+
+	const BUCKET_NAME = 'ag-forecastio';
+	const BUCKET_ID = 'in.c-ag-forecastio';
 	const CONDITIONS_TABLE_NAME = 'conditions';
 
 	public $tables = array(
-		self::CONDITIONS_TABLE_NAME => array(
-			'columns' => array('address', 'latitude', 'longitude', 'date', 'key', 'value'),
-			'primaryKey' => null,
-			'indices' => array()
-		)
+		'columns' => array('latitude', 'longitude', 'date', 'key', 'value'),
+		'primaryKey' => null
 	);
 
 
@@ -42,39 +46,88 @@ class UserStorage
 		$this->temp = $temp;
 	}
 
-	public function saveConditions($data)
+	public function save($data)
 	{
-		$this->updateTable(self::CONDITIONS_TABLE_NAME, $data);
+		$table = self::CONDITIONS_TABLE_NAME;
+
+		if (!isset($this->files[$table])) {
+			$this->files[$table] = new CsvFile($this->temp->createTmpFile());
+			$this->files[$table]->writeRow($this->tables['columns']);
+		}
+		$this->files[$table]->writeRow($data);
 	}
 
-	public function updateTable($tableName, $data)
+	public function uploadData()
 	{
-		if (!isset($this->tables[$tableName])) {
-			throw new \Exception('Storage table ' . $tableName . ' not found');
-		}
-
 		if (!$this->storageApiClient->bucketExists(self::BUCKET_ID)) {
-			$this->storageApiClient->createBucket(self::BUCKET_NAME, 'in', 'Forecast.Io Extractor Data Storage');
+			$this->storageApiClient->createBucket(self::BUCKET_NAME, 'in', 'Forecast.io Data Storage');
 		}
-		$table = new StorageApiTable($this->storageApiClient, self::BUCKET_ID . '.' . $tableName, null, $this->tables[$tableName]['primaryKey']);
-		$table->setHeader(array_keys($data[0]));
-		$table->setFromArray($data);
-		$table->setIncremental(true);
-		$table->save();
+
+		foreach($this->files as $name => $file) {
+			$tableId = self::BUCKET_ID . "." . $name;
+			try {
+				$options = array();
+				if (!empty($this->tables['primaryKey'])) {
+					$options['primaryKey'] = $this->tables['primaryKey'];
+				}
+				if(!$this->storageApiClient->tableExists($tableId)) {
+					$this->storageApiClient->createTableAsync(self::BUCKET_ID, $name, $file, $options);
+				} else {
+					$this->storageApiClient->writeTableAsync($tableId, $file, $options);
+				}
+			} catch(\Keboola\StorageApi\ClientException $e) {
+				throw new UserException($e->getMessage(), $e);
+			}
+		}
 	}
 
-	public function getTableColumnData($tableId, $column)
+	public function getData($tableId, $columns)
 	{
+		// Get from SAPI
+		$downloadedFile = $this->temp->createTmpFile();
 		$params = array(
 			'format' => 'escaped',
-			'columns' => array($column)
+			'columns' => is_array($columns)? $columns : array($columns)
 		);
+		try {
+			$exporter = new TableExporter($this->storageApiClient);
+			$exporter->exportTable($tableId, $downloadedFile->getRealPath(), $params);
+		} catch (ClientException $e) {
+			if ($e->getCode() == 404) {
+				throw new UserException($e->getMessage(), $e);
+			} else {
+				throw $e;
+			}
+		}
 
-		$file = $this->temp->createTmpFile();
-		$fileName = $file->getRealPath();
-		$exporter = new TableExporter($this->storageApiClient);
-		$exporter->exportTable($tableId, $fileName, $params);
+		if (!file_exists($downloadedFile->getRealPath())) {
+			$e = new SyrupComponentException(500, 'Download from SAPI failed');
+			$e->setData(array(
+				'tableId' => $tableId,
+				'columns' => $columns
+			));
+			throw $e;
+		}
 
-		return $fileName;
+		// Deduplicate data
+		$processedFile = $this->temp->createTmpFile();
+		$process = new Process(sprintf('sed -e "1d" %s | sort | uniq > %s', $downloadedFile->getRealPath(), $processedFile->getRealPath()));
+		$process->setTimeout(null);
+		$process->run();
+		$error = $process->getErrorOutput();
+		$output = $process->getOutput();
+
+		if ($process->isSuccessful() && !$error && file_exists($processedFile->getRealPath())) {
+			return $processedFile;
+		} else {
+			$e = new SyrupComponentException(500, 'Deduplication failed');
+			$e->setData(array(
+				'tableId' => $tableId,
+				'columns' => $columns,
+				'error' => $error,
+				'output' => $output
+			));
+			throw $e;
+		}
 	}
 } 

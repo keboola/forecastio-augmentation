@@ -8,6 +8,7 @@
 namespace Keboola\ForecastIoAugmentation\Service;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
 
 class SharedStorage
 {
@@ -15,43 +16,25 @@ class SharedStorage
 	 * @var \Doctrine\DBAL\Connection
 	 */
 	protected $db;
+	const TABLE_NAME = 'forecastio_cache';
 
-	public function __construct(\Doctrine\Bundle\DoctrineBundle\Registry $doctrine)
+	public function __construct(Connection $db)
 	{
-		$this->db = $doctrine->getConnection();
+		$this->db = $db;
 	}
 
-	public function getSavedLocations($locations)
-	{
-		$query = $this->db->fetchAll('SELECT * FROM locations WHERE name IN (?)', array($locations), array(Connection::PARAM_STR_ARRAY));
-		$result = array();
-		foreach ($query as $q) {
-			$result[$q['name']] = array('latitude' => $q['latitude'], 'longitude' => $q['longitude']);
-		}
-		return $result;
-	}
-
-	public function saveLocation($name, $lat, $lon)
-	{
-		$this->db->insert('locations', array(
-			'name' => $name,
-			'latitude' => $lat,
-			'longitude' => $lon
-		));
-	}
-
-	public function getSavedConditions($coordinates, $date, $conditions=null)
+	public function get($coordinates, $date, $conditions=null)
 	{
 		$locations = array();
 		foreach ($coordinates as $c) {
-			$locations[] = round($c['latitude'], 2) . ':' . round($c['longitude'], 2);
+			$locations[] = round($c[0], 2) . ':' . round($c[1], 2);
 		}
 		if ($conditions) {
-			$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM conditions WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
+			$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM ' . self::TABLE_NAME . ' WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
 				array($locations, date('Y-m-d H:00:00', strtotime($date)), $conditions),
 				array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR, Connection::PARAM_STR_ARRAY));
 		} else {
-			$query = $this->db->fetchAll('SELECT * FROM conditions WHERE location IN (?) AND date=?',
+			$query = $this->db->fetchAll('SELECT * FROM ' . self::TABLE_NAME . ' WHERE location IN (?) AND date=?',
 				array($locations, date('Y-m-d H:00:00', strtotime($date))),
 				array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR));
 		}
@@ -64,13 +47,17 @@ class SharedStorage
 		return $result;
 	}
 
-	public function saveCondition($lat, $lon, $date, $key, $value)
+	public function save($lat, $lon, $date, $key, $value)
 	{
-		$this->db->insert('conditions', array(
-			'location' => round($lat, 2) . ':' . round($lon, 2),
-			'date' => date('Y-m-d H:00:00', strtotime($date)),
-			'`key`' => $key,
-			'value' => $value
-		));
+		try {
+			$this->db->insert(self::TABLE_NAME, array(
+				'location' => round($lat, 2) . ':' . round($lon, 2),
+				'date' => date('Y-m-d H:00:00', strtotime($date)),
+				'`key`' => $key,
+				'value' => $value
+			));
+		} catch (DBALException $e) {
+			// Ignore
+		}
 	}
 } 

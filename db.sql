@@ -1,11 +1,4 @@
-CREATE TABLE `locations` (
-  `name` varchar(255) NOT NULL DEFAULT '',
-  `latitude` float NOT NULL,
-  `longitude` float NOT NULL,
-  PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE `conditions` (
+CREATE TABLE `forecastio_cache` (
   `location` varchar(255) NOT NULL DEFAULT '',
   `date` datetime NOT NULL,
   `key` varchar(100) NOT NULL DEFAULT '',

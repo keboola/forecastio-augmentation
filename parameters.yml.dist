@@ -1,0 +1,16 @@
+parameters:
+    app_name: ag-forecastio
+    encryption_key: '' # 256-bit random key
+
+    database_driver:
+    database_host:
+    database_port:
+    database_name:
+    database_user:
+    database_password:
+
+    forecastio_key: '' # API key for Forecast.io API
+
+    components:
+        ag-forecastio:
+            bundle: "Keboola\ForecastIoAugmentation\KeboolaForecastIoAugmentation"

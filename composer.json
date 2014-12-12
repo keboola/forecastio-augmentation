@@ -1,7 +1,7 @@
 {
-    "name": "keboola/foreacastio-extractor-bundle",
+    "name": "keboola/foreacastio-augmentation",
     "type": "symfony-bundle",
-    "description": "Keboola Forecast.io Weather Extractor Bundle",
+    "description": "Keboola Forecast.io Weather Augmentation",
     "keywords": ["keboola", "weather", "forecast.io"],
     "authors": [
         {
@@ -9,42 +9,37 @@
             "email": "jakub@keboola.com"
         }
     ],
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@bitbucket.org:keboola/extractor-bundle.git"
-        }
-    ],
+    "repositories": [],
     "require": {
-        "syrup/component-bundle": "~1.7.0",
-        "league/geotools": "@stable"
+        "syrup/component-bundle": "~1.10.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.1"
+        "phpunit/phpunit": "~4.4"
     },
     "scripts": {
         "post-install-cmd": [
-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
-            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap"
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getSharedParameters",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache"
         ],
         "post-update-cmd": [
-            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getParameters",
+            "Syrup\\CoreBundle\\DeploymentHandler\\ScriptHandler::getSharedParameters",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache"
         ]
     },
     "minimum-stability": "stable",
     "autoload": {
-        "psr-0": { "Keboola\\ForecastIoExtractorBundle": "" }
+        "psr-0": {
+            "Keboola\\ForecastIoAugmentation": ""
+        }
     },
-    "target-dir": "Keboola/ForecastIoExtractorBundle",
+    "target-dir": "Keboola/ForecastIoAugmentation",
     "extra": {
         "symfony-app-dir": "vendor/keboola/syrup/app",
         "symfony-web-dir": "vendor/keboola/syrup/web",
-        "incenteev-parameters": {
-            "keep-outdated": true,
-            "file": "vendor/keboola/syrup/app/config/parameters.yml",
-            "dist-file": "parameters.yml"
-        }
+        "syrup-app-name": "ag-forecastio"
     }
 }

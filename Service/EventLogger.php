@@ -13,7 +13,6 @@ use Keboola\StorageApi\Client as StorageApiClient,
 
 class EventLogger
 {
-	private $appConfiguration;
 	private $storageApiClient;
 	private $jobId;
 
@@ -22,9 +21,8 @@ class EventLogger
 	const TYPE_SUCCESS = StorageApiEvent::TYPE_SUCCESS;
 	const TYPE_WARN = StorageApiEvent::TYPE_WARN;
 
-	public function __construct(AppConfiguration $appConfiguration, StorageApiClient $storageApiClient, $jobId)
+	public function __construct(StorageApiClient $storageApiClient, $jobId)
 	{
-		$this->appConfiguration = $appConfiguration;
 		$this->storageApiClient = $storageApiClient;
 		$this->jobId = $jobId;
 	}
