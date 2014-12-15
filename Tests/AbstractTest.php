@@ -12,13 +12,17 @@ use Keboola\StorageApi\Table;
 
 abstract class AbstractTest extends \Symfony\Bundle\FrameworkBundle\Test\WebTestCase
 {
+
+	const APP_NAME = 'ag-forecastio';
+
 	/**
 	 * @var StorageApiClient
 	 */
 	protected $storageApiClient;
 
-	protected $bucketName;
-	protected $tableId;
+	protected $inBucket;
+	protected $outBucket;
+	protected $dataTableId;
 
 	public function setUp()
 	{
@@ -27,12 +31,30 @@ abstract class AbstractTest extends \Symfony\Bundle\FrameworkBundle\Test\WebTest
 			'url' => STORAGE_API_URL
 		));
 
-		$this->bucketName = 't' . uniqid();
-		$this->storageApiClient->createBucket($this->bucketName, 'out', 'Test');
-		$this->tableId = 'out.c-' . $this->bucketName . '.' . uniqid();
+		$this->inBucket = sprintf('in.c-%s', self::APP_NAME);
+		$this->outBucket = sprintf('out.c-%s', self::APP_NAME);
+		$this->dataTableId = sprintf('%s.%s', $this->outBucket, uniqid());
+
+		// Cleanup
+		if ($this->storageApiClient->bucketExists($this->inBucket)) {
+			foreach ($this->storageApiClient->listTables($this->inBucket) as $table) {
+				$this->storageApiClient->dropTable($table['id']);
+			}
+			$this->storageApiClient->dropBucket($this->inBucket);
+		}
+		if ($this->storageApiClient->bucketExists($this->outBucket)) {
+			foreach ($this->storageApiClient->listTables($this->outBucket) as $table) {
+				$this->storageApiClient->dropTable($table['id']);
+			}
+			$this->storageApiClient->dropBucket($this->outBucket);
+		}
+
+		if (!$this->storageApiClient->bucketExists($this->outBucket)) {
+			$this->storageApiClient->createBucket(self::APP_NAME, 'out', 'Test');
+		}
 
 		// Prepare data table
-		$t = new Table($this->storageApiClient, $this->tableId);
+		$t = new Table($this->storageApiClient, $this->dataTableId);
 		$t->setHeader(array('lat', 'lon'));
 		$t->setFromArray(array(
 			array('35.235', '57.453'),
@@ -43,16 +65,6 @@ abstract class AbstractTest extends \Symfony\Bundle\FrameworkBundle\Test\WebTest
 			array('35.235', '57.453')
 		));
 		$t->save();
-
-		if ($this->storageApiClient->tableExists('in.c-ag-forecastio.conditions')) {
-			$this->storageApiClient->dropTable('in.c-ag-forecastio.conditions');
-		}
-	}
-
-	public function tearDown()
-	{
-		$this->storageApiClient->dropTable($this->tableId);
-		$this->storageApiClient->dropBucket('out.c-' . $this->bucketName);
 	}
 
 }

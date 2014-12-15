@@ -27,6 +27,12 @@ class FunctionalTest extends AbstractTest
 	{
 		parent::setUp();
 
+		// Cleanup
+		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, Configuration::TABLE_NAME);
+		if ($this->storageApiClient->tableExists($configTableId)) {
+			$this->storageApiClient->dropTable($configTableId);
+		}
+
 		$db = \Doctrine\DBAL\DriverManager::getConnection(array(
 			'driver' => 'pdo_mysql',
 			'host' => DB_HOST,
@@ -43,15 +49,10 @@ class FunctionalTest extends AbstractTest
 		$logger = new \Monolog\Logger('null');
 		$logger->pushHandler(new NullHandler());
 
-		$temp = new \Syrup\ComponentBundle\Filesystem\Temp('ag-forecastio');
+		$temp = new \Syrup\ComponentBundle\Filesystem\Temp(self::APP_NAME);
 
 		$this->jobExecutor = new JobExecutor($sharedStorage, $temp, $logger, FORECASTIO_KEY);
 		$this->jobExecutor->setStorageApi($this->storageApiClient);
-
-		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, Configuration::TABLE_NAME);
-		if ($this->storageApiClient->tableExists($configTableId)) {
-			$this->storageApiClient->dropTable($configTableId);
-		}
 
 		list($bucketStage, $bucketName) = explode('.', Configuration::BUCKET_ID);
 		if (!$this->storageApiClient->bucketExists(Configuration::BUCKET_ID)) {
@@ -61,17 +62,9 @@ class FunctionalTest extends AbstractTest
 		$t = new Table($this->storageApiClient, $configTableId);
 		$t->setHeader(array('tableId', 'latitudeCol', 'longitudeCol', 'conditions', 'units'));
 		$t->setFromArray(array(
-			array($this->tableId, 'lat', 'lon', 'pressure,humidity,temperature,cloudCover', 'si')
+			array($this->dataTableId, 'lat', 'lon', 'pressure,humidity,temperature,cloudCover', 'si')
 		));
 		$t->save();
-	}
-
-	public function tearDown()
-	{
-		parent::tearDown();
-
-		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, Configuration::TABLE_NAME);
-		$this->storageApiClient->dropTable($configTableId);
 	}
 
 
@@ -81,7 +74,7 @@ class FunctionalTest extends AbstractTest
 			'id' => uniqid(),
 			'runId' => uniqid(),
 			'token' => $this->storageApiClient->getLogData(),
-			'component' => 'ag-forecastio',
+			'component' => self::APP_NAME,
 			'command' => 'run',
 			'params' => array()
 		)));

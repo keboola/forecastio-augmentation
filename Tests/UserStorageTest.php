@@ -15,10 +15,10 @@ class UserStorageTest extends AbstractTest
 
 	public function testDownload()
 	{
-		$temp = new \Syrup\ComponentBundle\Filesystem\Temp('ag-geocoding');
+		$temp = new \Syrup\ComponentBundle\Filesystem\Temp(self::APP_NAME);
 		$userStorage = new UserStorage($this->storageApiClient, $temp);
 
-		$csv = new CsvFile($userStorage->getData($this->tableId, array('lat', 'lon')));
+		$csv = new CsvFile($userStorage->getData($this->dataTableId, array('lat', 'lon')));
 
 		$data = array();
 		foreach ($csv as $r) {
