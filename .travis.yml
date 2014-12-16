@@ -1,12 +1,18 @@
+branches:
+  only:
+    - master
+
 language: php
 php:
-- '5.6'
-- '5.4'
+  - '5.6'
+  - '5.4'
 services:
-- mysql
+  - mysql
+
 before_script:
-- mysql -e 'create database ag_forecastio_test;'
-- composer install -n --no-scripts
+  - mysql -e 'create database ag_forecastio_test;'
+  - composer install -n --no-scripts
+
 notifications:
   slack:
     secure: IF5CgJ8B2mY/zlX/lFKRdMYKfMndD4ZKlJU65bqUPasPaC/M0icllss98lvNWpGKPJCxZ0ao4WZooKUCOT0Z90l+kF5yiNROHxdFh2MixvHLHLVuN/h/OFqhZx6z4PPSK2oky/WeAmBAjY1QHCV3dkBgwwK3GdzLeEcuwjO2Mhg=
