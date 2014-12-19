@@ -23,13 +23,13 @@ class SharedStorage
 		$this->db = $db;
 	}
 
-	public function get($coordinates, $date, $conditions=null)
+	public function get($coordinates, $date, $conditions=array())
 	{
 		$locations = array();
 		foreach ($coordinates as $c) {
 			$locations[] = round($c[0], 2) . ':' . round($c[1], 2);
 		}
-		if ($conditions) {
+		if (count($conditions)) {
 			$query = $this->db->fetchAll('SELECT * FROM (SELECT * FROM ' . self::TABLE_NAME . ' WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
 				array($locations, date('Y-m-d H:00:00', strtotime($date)), $conditions),
 				array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR, Connection::PARAM_STR_ARRAY));

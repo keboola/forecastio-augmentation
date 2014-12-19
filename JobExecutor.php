@@ -72,16 +72,22 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 		$this->eventLogger = new EventLogger($this->storageApi, $job->getId());
 		$this->userStorage = new UserStorage($this->storageApi, $this->temp);
 
-		foreach ($this->configuration->getConfiguration() as $config) {
-			$dataFile = $this->userStorage->getData($config['tableId'], array($config['latitudeCol'], $config['longitudeCol']));
+		$params = $job->getParams();
+		$configIds = isset($params['config'])? array($params['config']) : $this->configuration->getConfigurationsList();
 
-			$this->process($dataFile, date('c'), $config['conditions'], $config['units']);
+		foreach ($configIds as $configId) {
+			$configuration = $this->configuration->getConfiguration($configId);
+			foreach ($configuration['tables'] as $configTable) {
+				$dataFile = $this->userStorage->getData($configTable['tableId'], array($configTable['latitudeCol'], $configTable['longitudeCol']));
+
+				$this->process($configId, $dataFile, date('c'), $configuration['conditions'], $configuration['units']);
+			}
 		}
 
 		$this->userStorage->uploadData();
 	}
 
-	public function process($dataFile, $date, $conditions=null, $units=self::TEMPERATURE_UNITS_SI)
+	public function process($configId, $dataFile, $date, $conditions=array(), $units=self::TEMPERATURE_UNITS_SI)
 	{
 		// Download file with data column to disk and read line-by-line
 		// Query Geocoding API by 50 queries
@@ -95,7 +101,7 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 
 				// Run for every 50 lines
 				if (count($lines) >= $countInBatch) {
-					$this->processBatch($lines, $date, $conditions, $units);
+					$this->processBatch($configId, $lines, $date, $conditions, $units);
 					$this->eventLogger->log(sprintf('Processed %d queries', $batchNumber * $countInBatch));
 
 					$lines = array();
@@ -106,13 +112,13 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 		}
 		if (count($lines)) {
 			// Run the rest of lines above the highest multiple of 50
-			$this->processBatch($lines, $date, $conditions, $units);
+			$this->processBatch($configId, $lines, $date, $conditions, $units);
 			$this->eventLogger->log(sprintf('Processed %d queries', (($batchNumber - 1) * $countInBatch) + count($lines)));
 		}
 		fclose($handle);
 	}
 
-	public function processBatch($coordinates, $date, $conditions=null, $units=self::TEMPERATURE_UNITS_SI)
+	public function processBatch($configId, $coordinates, $date, $conditions=array(), $units=self::TEMPERATURE_UNITS_SI)
 	{
 		$cache = $this->sharedStorage->get($coordinates, $date, $conditions);
 		$result = array();
@@ -153,7 +159,7 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 				$locKey = sprintf('%s:%s', $r->getLatitude(), $r->getLongitude());
 				foreach ($allConditions as $k => $v) {
 					$this->sharedStorage->save($r->getLatitude(), $r->getLongitude(), $date, $k, $v);
-					if (!$conditions || in_array($k, $conditions)) {
+					if (!count($conditions) || in_array($k, $conditions)) {
 						$result[$locKey][$k] = $v;
 					}
 				}
@@ -197,7 +203,7 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 						}
 					}
 
-					$this->userStorage->save(array(
+					$this->userStorage->save($configId, array(
 						'latitude' => $coord[0],
 						'longitude' => $coord[1],
 						'date' => $date,

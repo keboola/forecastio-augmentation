@@ -22,13 +22,16 @@ class FunctionalTest extends AbstractTest
 	 * @var JobExecutor
 	 */
 	private $jobExecutor;
+	private $configId;
 
 	public function setUp()
 	{
 		parent::setUp();
 
+		$this->configId = 'test';
+
 		// Cleanup
-		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, Configuration::TABLE_NAME);
+		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, $this->configId);
 		if ($this->storageApiClient->tableExists($configTableId)) {
 			$this->storageApiClient->dropTable($configTableId);
 		}
@@ -60,9 +63,11 @@ class FunctionalTest extends AbstractTest
 		}
 
 		$t = new Table($this->storageApiClient, $configTableId);
-		$t->setHeader(array('tableId', 'latitudeCol', 'longitudeCol', 'conditions', 'units'));
+		$t->setHeader(array('tableId', 'latitudeCol', 'longitudeCol'));
+		$t->setAttribute('conditions', 'pressure,humidity,temperature,cloudCover');
+		$t->setAttribute('units', 'us');
 		$t->setFromArray(array(
-			array($this->dataTableId, 'lat', 'lon', 'pressure,humidity,temperature,cloudCover', 'si')
+			array($this->dataTableId, 'lat', 'lon')
 		));
 		$t->save();
 	}
@@ -76,10 +81,12 @@ class FunctionalTest extends AbstractTest
 			'token' => $this->storageApiClient->getLogData(),
 			'component' => self::APP_NAME,
 			'command' => 'run',
-			'params' => array()
+			'params' => array(
+				'config' => $this->configId
+			)
 		)));
 
-		$dataTableId = sprintf('%s.%s', UserStorage::BUCKET_ID, UserStorage::CONDITIONS_TABLE_NAME);
+		$dataTableId = sprintf('%s.%s', UserStorage::BUCKET_ID, $this->configId);
 		$this->assertTrue($this->storageApiClient->tableExists($dataTableId));
 		$export = $this->storageApiClient->exportTable($dataTableId);
 		$csv = StorageApiClient::parseCsv($export, true);

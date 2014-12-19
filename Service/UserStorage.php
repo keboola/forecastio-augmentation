@@ -32,7 +32,6 @@ class UserStorage
 
 	const BUCKET_NAME = 'ag-forecastio';
 	const BUCKET_ID = 'in.c-ag-forecastio';
-	const CONDITIONS_TABLE_NAME = 'conditions';
 
 	public $tables = array(
 		'columns' => array('latitude', 'longitude', 'date', 'key', 'value'),
@@ -46,15 +45,13 @@ class UserStorage
 		$this->temp = $temp;
 	}
 
-	public function save($data)
+	public function save($configId, $data)
 	{
-		$table = self::CONDITIONS_TABLE_NAME;
-
-		if (!isset($this->files[$table])) {
-			$this->files[$table] = new CsvFile($this->temp->createTmpFile());
-			$this->files[$table]->writeRow($this->tables['columns']);
+		if (!isset($this->files[$configId])) {
+			$this->files[$configId] = new CsvFile($this->temp->createTmpFile());
+			$this->files[$configId]->writeRow($this->tables['columns']);
 		}
-		$this->files[$table]->writeRow($data);
+		$this->files[$configId]->writeRow($data);
 	}
 
 	public function uploadData()
@@ -63,19 +60,19 @@ class UserStorage
 			$this->storageApiClient->createBucket(self::BUCKET_NAME, 'in', 'Forecast.io Data Storage');
 		}
 
-		foreach($this->files as $name => $file) {
-			$tableId = self::BUCKET_ID . "." . $name;
+		foreach ($this->files as $configId => $file) {
+			$tableId = self::BUCKET_ID . "." . $configId;
 			try {
 				$options = array();
 				if (!empty($this->tables['primaryKey'])) {
 					$options['primaryKey'] = $this->tables['primaryKey'];
 				}
-				if(!$this->storageApiClient->tableExists($tableId)) {
-					$this->storageApiClient->createTableAsync(self::BUCKET_ID, $name, $file, $options);
+				if (!$this->storageApiClient->tableExists($tableId)) {
+					$this->storageApiClient->createTableAsync(self::BUCKET_ID, $configId, $file, $options);
 				} else {
 					$this->storageApiClient->writeTableAsync($tableId, $file, $options);
 				}
-			} catch(\Keboola\StorageApi\ClientException $e) {
+			} catch (\Keboola\StorageApi\ClientException $e) {
 				throw new UserException($e->getMessage(), $e);
 			}
 		}

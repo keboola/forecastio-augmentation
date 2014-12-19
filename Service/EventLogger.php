@@ -33,7 +33,7 @@ class EventLogger
 		$event
 			->setType($type)
 			->setMessage($message)
-			->setComponent('ex-forecastio') //@TODO load from config
+			->setComponent('ag-forecastio') //@TODO load from config
 			->setConfigurationId($this->jobId)
 			->setRunId($this->storageApiClient->getRunId());
 		if (count($params)) {
