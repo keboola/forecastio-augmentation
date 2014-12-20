@@ -8,7 +8,7 @@
 namespace Keboola\ForecastIoAugmentation\Tests;
 
 use Keboola\ForecastIoAugmentation\JobExecutor;
-use Keboola\ForecastIoAugmentation\Service\Configuration;
+use Keboola\ForecastIoAugmentation\Service\ConfigurationStorage;
 use Keboola\ForecastIoAugmentation\Service\SharedStorage;
 use Keboola\ForecastIoAugmentation\Service\UserStorage;
 use Keboola\StorageApi\Table;
@@ -31,7 +31,7 @@ class FunctionalTest extends AbstractTest
 		$this->configId = 'test';
 
 		// Cleanup
-		$configTableId = sprintf('%s.%s', Configuration::BUCKET_ID, $this->configId);
+		$configTableId = sprintf('%s.%s', ConfigurationStorage::BUCKET_ID, $this->configId);
 		if ($this->storageApiClient->tableExists($configTableId)) {
 			$this->storageApiClient->dropTable($configTableId);
 		}
@@ -57,8 +57,8 @@ class FunctionalTest extends AbstractTest
 		$this->jobExecutor = new JobExecutor($sharedStorage, $temp, $logger, FORECASTIO_KEY);
 		$this->jobExecutor->setStorageApi($this->storageApiClient);
 
-		list($bucketStage, $bucketName) = explode('.', Configuration::BUCKET_ID);
-		if (!$this->storageApiClient->bucketExists(Configuration::BUCKET_ID)) {
+		list($bucketStage, $bucketName) = explode('.', ConfigurationStorage::BUCKET_ID);
+		if (!$this->storageApiClient->bucketExists(ConfigurationStorage::BUCKET_ID)) {
 			$this->storageApiClient->createBucket(substr($bucketName, 2), $bucketStage, 'Forecast.io config');
 		}
 

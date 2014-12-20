@@ -7,11 +7,9 @@
 
 namespace Keboola\ForecastIoAugmentation\Service;
 
-use Keboola\StorageApi\Client as StorageApiClient,
-	Keboola\StorageApi\Table as StorageApiTable;
+use Keboola\StorageApi\Client as StorageApiClient;
 use Keboola\StorageApi\Client;
 use Syrup\ComponentBundle\Exception\SyrupComponentException;
-use Syrup\ComponentBundle\Service\StorageApi\StorageApiService;
 
 class ConfigurationException extends SyrupComponentException
 {
@@ -21,7 +19,7 @@ class ConfigurationException extends SyrupComponentException
 	}
 }
 
-class Configuration
+class ConfigurationStorage
 {
 	/**
 	 * @var \Keboola\StorageApi\Client

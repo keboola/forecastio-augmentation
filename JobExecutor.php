@@ -10,7 +10,7 @@ namespace Keboola\ForecastIoAugmentation;
 
 use Keboola\ForecastIoAugmentation\ForecastTools\Forecast;
 use Keboola\ForecastIoAugmentation\ForecastTools\Response;
-use Keboola\ForecastIoAugmentation\Service\Configuration;
+use Keboola\ForecastIoAugmentation\Service\ConfigurationStorage;
 use Keboola\ForecastIoAugmentation\Service\EventLogger;
 use Keboola\ForecastIoAugmentation\Service\SharedStorage;
 use Keboola\ForecastIoAugmentation\Service\UserStorage;
@@ -42,10 +42,6 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 	 */
 	protected $userStorage;
 	/**
-	 * @var Configuration
-	 */
-	protected $configuration;
-	/**
 	 * @var EventLogger
 	 */
 	protected $eventLogger;
@@ -68,15 +64,15 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 	 */
 	public function execute(Job $job)
 	{
-		$this->configuration = new Configuration($this->storageApi);
+		$configurationStorage = new ConfigurationStorage($this->storageApi);
 		$this->eventLogger = new EventLogger($this->storageApi, $job->getId());
 		$this->userStorage = new UserStorage($this->storageApi, $this->temp);
 
 		$params = $job->getParams();
-		$configIds = isset($params['config'])? array($params['config']) : $this->configuration->getConfigurationsList();
+		$configIds = isset($params['config'])? array($params['config']) : $configurationStorage->getConfigurationsList();
 
 		foreach ($configIds as $configId) {
-			$configuration = $this->configuration->getConfiguration($configId);
+			$configuration = $configurationStorage->getConfiguration($configId);
 			foreach ($configuration['tables'] as $configTable) {
 				$dataFile = $this->userStorage->getData($configTable['tableId'], array($configTable['latitudeCol'], $configTable['longitudeCol']));
 
