@@ -14,7 +14,7 @@ use Keboola\ForecastIoAugmentation\Service\UserStorage;
 use Keboola\StorageApi\Table;
 use Keboola\StorageApi\Client as StorageApiClient;
 use Monolog\Handler\NullHandler;
-use Syrup\ComponentBundle\Job\Metadata\Job;
+use Keboola\Syrup\Job\Metadata\Job;
 
 class FunctionalTest extends AbstractTest
 {
@@ -52,7 +52,7 @@ class FunctionalTest extends AbstractTest
 		$logger = new \Monolog\Logger('null');
 		$logger->pushHandler(new NullHandler());
 
-		$temp = new \Syrup\ComponentBundle\Filesystem\Temp(self::APP_NAME);
+		$temp = new \Keboola\Syrup\Filesystem\Temp(self::APP_NAME);
 
 		$this->jobExecutor = new JobExecutor($sharedStorage, $temp, $logger, FORECASTIO_KEY);
 		$this->jobExecutor->setStorageApi($this->storageApiClient);

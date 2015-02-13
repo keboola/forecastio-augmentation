@@ -15,10 +15,10 @@ use Keboola\ForecastIoAugmentation\Service\EventLogger;
 use Keboola\ForecastIoAugmentation\Service\SharedStorage;
 use Keboola\ForecastIoAugmentation\Service\UserStorage;
 use Monolog\Logger;
-use Syrup\ComponentBundle\Filesystem\Temp;
-use Syrup\ComponentBundle\Job\Metadata\Job;
+use Keboola\Temp\Temp;
+use Keboola\Syrup\Job\Metadata\Job;
 
-class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
+class JobExecutor extends \Keboola\Syrup\Job\Executor
 {
 	/**
 	 * @var Forecast
@@ -30,7 +30,7 @@ class JobExecutor extends \Syrup\ComponentBundle\Job\Executor
 	 */
 	protected $sharedStorage;
 	/**
-	 * @var \Syrup\ComponentBundle\Filesystem\Temp
+	 * @var \Keboola\Temp\Temp
 	 */
 	protected $temp;
 	/**
