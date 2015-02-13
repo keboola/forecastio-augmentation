@@ -15,7 +15,7 @@ class UserStorageTest extends AbstractTest
 
 	public function testDownload()
 	{
-		$temp = new \Keboola\Syrup\Filesystem\Temp(self::APP_NAME);
+		$temp = new \Keboola\Temp\Temp(self::APP_NAME);
 		$userStorage = new UserStorage($this->storageApiClient, $temp);
 
 		$csv = new CsvFile($userStorage->getData($this->dataTableId, array('lat', 'lon')));

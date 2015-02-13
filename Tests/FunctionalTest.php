@@ -52,7 +52,7 @@ class FunctionalTest extends AbstractTest
 		$logger = new \Monolog\Logger('null');
 		$logger->pushHandler(new NullHandler());
 
-		$temp = new \Keboola\Syrup\Filesystem\Temp(self::APP_NAME);
+		$temp = new \Keboola\Temp\Temp(self::APP_NAME);
 
 		$this->jobExecutor = new JobExecutor($sharedStorage, $temp, $logger, FORECASTIO_KEY);
 		$this->jobExecutor->setStorageApi($this->storageApiClient);
