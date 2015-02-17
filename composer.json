@@ -1,5 +1,5 @@
 {
-    "name": "keboola/foreacastio-augmentation",
+    "name": "keboola/forecastio-augmentation",
     "type": "symfony-bundle",
     "description": "Keboola Forecast.io Weather Augmentation",
     "keywords": ["keboola", "weather", "forecast.io"],
