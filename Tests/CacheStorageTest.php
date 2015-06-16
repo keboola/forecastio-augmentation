@@ -7,12 +7,12 @@
 
 namespace Keboola\ForecastIoAugmentation\Tests;
 
-use Keboola\ForecastIoAugmentation\Service\SharedStorage;
+use Keboola\ForecastIoAugmentation\Service\CacheStorage;
 
-class SharedStorageTest extends AbstractTest
+class CacheStorageTest extends AbstractTest
 {
 
-    public function testSharedStorage()
+    public function testCacheStorage()
     {
         $db = \Doctrine\DBAL\DriverManager::getConnection(array(
             'driver' => 'pdo_mysql',
@@ -26,7 +26,7 @@ class SharedStorageTest extends AbstractTest
         $stmt->execute();
         $stmt->closeCursor();
 
-        $sharedStorage = new SharedStorage($db);
+        $cacheStorage = new CacheStorage($db);
 
         $data = [
             [
@@ -51,21 +51,21 @@ class SharedStorageTest extends AbstractTest
 
         foreach ($data as $d) {
             foreach ($d['conditions'] as $k => $v) {
-                $sharedStorage->save($d['lat'], $d['lon'], $d['time'], $k, $v);
+                $cacheStorage->save($d['lat'], $d['lon'], $d['time'], $k, $v);
             }
         }
 
         // Get all conditions
-        $result = $sharedStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]]);
+        $result = $cacheStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]]);
         $this->assertCount(1, $result);
-        $cacheKey = SharedStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
+        $cacheKey = CacheStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
         $this->assertArrayHasKey($cacheKey, $result);
         $this->assertCount(2, $result[$cacheKey]);
 
         // Get one condition
-        $result = $sharedStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]], ['temperature']);
+        $result = $cacheStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]], ['temperature']);
         $this->assertCount(1, $result);
-        $cacheKey = SharedStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
+        $cacheKey = CacheStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
         $this->assertArrayHasKey($cacheKey, $result);
         $this->assertCount(1, $result[$cacheKey]);
     }

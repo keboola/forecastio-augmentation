@@ -26,10 +26,10 @@ abstract class AbstractTest extends \Symfony\Bundle\FrameworkBundle\Test\WebTest
 
     public function setUp()
     {
-        $this->storageApiClient = new StorageApiClient(array(
+        $this->storageApiClient = new StorageApiClient([
             'token' => STORAGE_API_TOKEN,
             'url' => STORAGE_API_URL
-        ));
+        ]);
 
         $this->inBucket = sprintf('in.c-%s', self::APP_NAME);
         $this->outBucket = sprintf('out.c-%s', self::APP_NAME);
@@ -55,15 +55,15 @@ abstract class AbstractTest extends \Symfony\Bundle\FrameworkBundle\Test\WebTest
 
         // Prepare data table
         $t = new Table($this->storageApiClient, $this->dataTableId);
-        $t->setHeader(array('lat', 'lon'));
-        $t->setFromArray(array(
-            array('35.235', '57.453'),
-            array('36.234', '56.443'),
-            array('35.235', '57.453'),
-            array('35.235', '57.553'),
-            array('35.333', '57.333'),
-            array('35.235', '57.453')
-        ));
+        $t->setHeader(['lat', 'lon', 'time']);
+        $t->setFromArray([
+            ['35.235', '57.453', '2015-06-01 14:00:00'],
+            ['35.235', '57.453', '2015-06-01 14:01:00'],
+            ['35.235', '57.454', '2015-06-01 15:40:00'],
+            ['35.235', '57.553', '2015-06-02 10:00:00'],
+            ['36.234', '56.443', '2015-06-01 16:00:00'],
+            ['35.333', '57.333', '2015-06-03 04:00:00'],
+        ]);
         $t->save();
     }
 }

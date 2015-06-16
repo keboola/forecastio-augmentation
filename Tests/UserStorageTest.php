@@ -18,16 +18,18 @@ class UserStorageTest extends AbstractTest
         $temp = new \Keboola\Temp\Temp(self::APP_NAME);
         $userStorage = new UserStorage($this->storageApiClient, $temp);
 
-        $csv = new CsvFile($userStorage->getData($this->dataTableId, array('lat', 'lon')));
+        $csv = new CsvFile($userStorage->getData($this->dataTableId, ['lat', 'lon']));
 
-        $data = array();
+        $data = [];
         foreach ($csv as $r) {
-            $data[] = array($r[0], $r[1]);
+            $data[] = [$r[0], $r[1]];
         }
-        $this->assertEquals(array(
-            array("35.235","57.453"),
-            array("35.235","57.553"),
-            array("35.333","57.333"),
-            array("36.234","56.443")), $data);
+        $this->assertEquals([
+            ["35.235","57.453"],
+            ["35.235","57.454"],
+            ["35.235","57.553"],
+            ["35.333","57.333"],
+            ["36.234","56.443"]
+        ], $data);
     }
 }

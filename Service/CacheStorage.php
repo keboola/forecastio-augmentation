@@ -10,7 +10,7 @@ namespace Keboola\ForecastIoAugmentation\Service;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
 
-class SharedStorage
+class CacheStorage
 {
     /**
      * @var \Doctrine\DBAL\Connection
