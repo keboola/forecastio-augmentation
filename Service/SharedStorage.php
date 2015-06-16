@@ -23,26 +23,31 @@ class SharedStorage
         $this->db = $db;
     }
 
-    public function get($coordinates, $date, $conditions = array())
+    public static function getCacheTimeFormat($date)
+    {
+        return date('Ymd:H', strtotime($date));
+    }
+
+    public function get($coordinates, $conditions = [])
     {
         $locations = array();
         foreach ($coordinates as $c) {
-            $locations[] = round($c[0], 2) . ':' . round($c[1], 2);
+            $locations[] = round($c[0], 2) . ':' . round($c[1], 2) . ':' . self::getCacheTimeFormat($c[2]);
         }
         if (count($conditions)) {
             $query = $this->db->fetchAll(
-                'SELECT * FROM (SELECT * FROM ' . self::TABLE_NAME . ' WHERE location IN (?) AND date=?) AS t WHERE t.key IN (?)',
-                array($locations, date('Y-m-d H:00:00', strtotime($date)), $conditions),
-                array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR, Connection::PARAM_STR_ARRAY)
+                'SELECT * FROM ' . self::TABLE_NAME . ' AS t WHERE t.location IN (?) AND t.key IN (?)',
+                [$locations, $conditions],
+                [Connection::PARAM_STR_ARRAY, Connection::PARAM_STR_ARRAY]
             );
         } else {
             $query = $this->db->fetchAll(
-                'SELECT * FROM ' . self::TABLE_NAME . ' WHERE location IN (?) AND date=?',
-                array($locations, date('Y-m-d H:00:00', strtotime($date))),
-                array(Connection::PARAM_STR_ARRAY, \PDO::PARAM_STR)
+                'SELECT * FROM ' . self::TABLE_NAME . ' AS t WHERE t.location IN (?)',
+                [$locations],
+                [Connection::PARAM_STR_ARRAY]
             );
         }
-        $result = array();
+        $result = [];
         foreach ($query as $q) {
             if (!isset($result[$q['location']])) {
                 $result[$q['location']] = array();
@@ -55,12 +60,11 @@ class SharedStorage
     public function save($lat, $lon, $date, $key, $value)
     {
         try {
-            $this->db->insert(self::TABLE_NAME, array(
-                'location' => round($lat, 2) . ':' . round($lon, 2),
-                'date' => date('Y-m-d H:00:00', strtotime($date)),
+            $this->db->insert(self::TABLE_NAME, [
+                'location' => round($lat, 2) . ':' . round($lon, 2) . ':' . self::getCacheTimeFormat($date),
                 '`key`' => $key,
                 'value' => $value
-            ));
+            ]);
         } catch (DBALException $e) {
             // Ignore
         }

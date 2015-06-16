@@ -42,6 +42,7 @@ class UserStorage
     {
         $this->storageApiClient = $storageApi;
         $this->temp = $temp;
+        $this->files = [];
     }
 
     public function save($configId, $data)

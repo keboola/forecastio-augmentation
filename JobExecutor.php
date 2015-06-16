@@ -45,6 +45,8 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
      */
     protected $eventLogger;
 
+    protected $actualTime;
+
     const TEMPERATURE_UNITS_SI = 'si';
     const TEMPERATURE_UNITS_US = 'us';
 
@@ -53,6 +55,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->sharedStorage = $sharedStorage;
         $this->temp = $temp;
         $this->logger = $logger;
+        $this->actualTime = date('Y-m-d H:i:s');
 
         $this->forecast = new Forecast($forecastIoKey, 10);
     }
@@ -68,27 +71,31 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->userStorage = new UserStorage($this->storageApi, $this->temp);
 
         $params = $job->getParams();
-        $configIds = isset($params['config'])? array($params['config']) : $configurationStorage->getConfigurationsList();
+        $configIds = isset($params['config'])? [$params['config']] : $configurationStorage->getConfigurationsList();
 
         foreach ($configIds as $configId) {
             $configuration = $configurationStorage->getConfiguration($configId);
-            foreach ($configuration['tables'] as $configTable) {
-                $dataFile = $this->userStorage->getData($configTable['tableId'], array($configTable['latitudeCol'], $configTable['longitudeCol']));
+            foreach ($configuration as $configTable) {
+                $columnsToGet = [$configTable['latitudeCol'], $configTable['longitudeCol']];
+                if (!empty($configTable['timeCol'])) {
+                    $columnsToGet[] = $configTable['timeCol'];
+                }
+                $dataFile = $this->userStorage->getData($configTable['tableId'], $columnsToGet);
 
-                $this->process($configId, $dataFile, date('c'), $configuration['conditions'], $configuration['units']);
+                $this->process($configId, $dataFile, $configTable['conditions'], $configTable['units']);
             }
         }
 
         $this->userStorage->uploadData();
     }
 
-    public function process($configId, $dataFile, $date, $conditions = array(), $units = self::TEMPERATURE_UNITS_SI)
+    public function process($configId, $dataFile, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
     {
         // Download file with data column to disk and read line-by-line
         // Query Geocoding API by 50 queries
         $batchNumber = 1;
         $countInBatch = 50;
-        $lines = array();
+        $lines = [];
         $handle = fopen($dataFile, "r");
         if ($handle) {
             while (($line = fgetcsv($handle)) !== false) {
@@ -96,10 +103,10 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
 
                 // Run for every 50 lines
                 if (count($lines) >= $countInBatch) {
-                    $this->processBatch($configId, $lines, $date, $conditions, $units);
+                    $this->processBatch($configId, $lines, $conditions, $units);
                     $this->eventLogger->log(sprintf('Processed %d queries', $batchNumber * $countInBatch));
 
-                    $lines = array();
+                    $lines = [];
                     $batchNumber++;
                 }
 
@@ -107,39 +114,53 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         }
         if (count($lines)) {
             // Run the rest of lines above the highest multiple of 50
-            $this->processBatch($configId, $lines, $date, $conditions, $units);
+            $this->processBatch($configId, $lines, $conditions, $units);
             $this->eventLogger->log(sprintf('Processed %d queries', (($batchNumber - 1) * $countInBatch) + count($lines)));
         }
         fclose($handle);
     }
 
-    public function processBatch($configId, $coordinates, $date, $conditions = array(), $units = self::TEMPERATURE_UNITS_SI)
+    public function processBatch($configId, $coordinates, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
     {
-        $cache = $this->sharedStorage->get($coordinates, $date, $conditions);
-        $result = array();
-
-        $paramsForApi = array();
-        foreach ($coordinates as $c) {
-            // Basically analyze validity of coordinate
+        // Basically analyze validity of coordinates and date
+        foreach ($coordinates as $i => &$c) {
             if ($c[0] === null || $c[1] === null || (!$c[0] && !$c[1]) || !is_numeric($c[0]) || !is_numeric($c[1])) {
-                $this->eventLogger->log(sprintf("Value '%s %s' is not valid coordinate", $c[0], $c[1]), array(), null, EventLogger::TYPE_WARN);
+                $this->eventLogger->log(sprintf("Value '%s %s' is not valid coordinate", $c[0], $c[1]), [], null, EventLogger::TYPE_WARN);
+                unset($coordinates[$i]);
+            } elseif (!isset($c[2])) {
+                $c[2] = $this->actualTime;
             } else {
-                // Round coordinates to two decimals, will be sufficient for weather requests
-                $lat = round($c[0], 2);
-                $lon = round($c[1], 2);
-                $locKey = sprintf('%s:%s', $lat, $lon);
-                if (!isset($cache[$locKey])) {
-                    if (!isset($paramsForApi[$locKey])) {
-                        $paramsForApi[$locKey] = array(
-                            'latitude' => $lat,
-                            'longitude' => $lon,
-                            'units' => 'si'
-                        );
-                    }
-                } else {
-                    foreach ($cache[$locKey] as $sc) {
-                        $result[$locKey][$sc['key']] = $sc['value'];
-                    }
+                $timestamp = strtotime($c[2]);
+                if (!$timestamp) {
+                    $this->eventLogger->log(sprintf("Time value %s for coordinates '%s %s' is not valid", $c[2], $c[0], $c[1]), [], null, EventLogger::TYPE_WARN);
+                    unset($coordinates[$i]);
+                }
+            }
+        }
+        $coordinates = array_values($coordinates);
+
+        $cache = $this->sharedStorage->get($coordinates, $conditions);
+        $result = [];
+
+        $paramsForApi = [];
+        foreach ($coordinates as $coord) {
+            // Round coordinates to two decimals, will be sufficient for weather requests
+            $lat = round($coord[0], 2);
+            $lon = round($coord[1], 2);
+            $locKey = sprintf('%s:%s:%s', $lat, $lon, SharedStorage::getCacheTimeFormat($coord[2]));
+            if (!isset($cache[$locKey])) {
+                if (!isset($paramsForApi[$locKey])) {
+                    $paramsForApi[$locKey] = [
+                        'latitude' => $lat,
+                        'longitude' => $lon,
+                        'time' => strtotime($coord[2]),
+                        'units' => 'si',
+                        'exclude' => 'minutely,hourly,daily,alerts,flags'
+                    ];
+                }
+            } else {
+                foreach ($cache[$locKey] as $sc) {
+                    $result[$locKey][$sc['key']] = $sc['value'];
                 }
             }
         }
@@ -147,20 +168,30 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         if (count($paramsForApi)) {
             foreach ($this->forecast->getData($paramsForApi) as $r) {
                 /** @var Response $r */
-                $allConditions = (array)$r->getRawData()->currently;
-                unset($allConditions['time']);
-                $locKey = sprintf('%s:%s', $r->getLatitude(), $r->getLongitude());
-                foreach ($allConditions as $k => $v) {
-                    $this->sharedStorage->save($r->getLatitude(), $r->getLongitude(), $date, $k, $v);
-                    if (!count($conditions) || in_array($k, $conditions)) {
-                        $result[$locKey][$k] = $v;
+                $data = (array)$r->getRawData();
+                if (isset($data['error'])) {
+                    $this->logger->debug('Getting conditions failed', [
+                        'coords' => $data['coords'],
+                        'time' => date('Y-m-d H:i:s', $data['time']),
+                        'error' => $data['error']
+                    ]);
+                } else {
+                    $conditions = (array)$data['currently'];
+                    $time = date('Y-m-d H:i:s', $conditions['time']);
+                    unset($conditions['time']);
+                    $locKey = sprintf('%s:%s:%s', $r->getLatitude(), $r->getLongitude(), SharedStorage::getCacheTimeFormat($time));
+                    foreach ($conditions as $k => $v) {
+                        $this->sharedStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v);
+                        if (!count($conditions) || in_array($k, $conditions)) {
+                            $result[$locKey][$k] = $v;
+                        }
                     }
                 }
             }
         }
 
         foreach ($coordinates as $coord) {
-            $locKey = sprintf('%s:%s', round($coord[0], 2), round($coord[1], 2));
+            $locKey = sprintf('%s:%s:%s', round($coord[0], 2), round($coord[1], 2), SharedStorage::getCacheTimeFormat($coord[2]));
             if (isset($result[$locKey])) {
                 $res = $result[$locKey];
                 foreach ($res as $k => $v) {
@@ -195,16 +226,16 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                         }
                     }
 
-                    $this->userStorage->save($configId, array(
+                    $this->userStorage->save($configId, [
                         'latitude' => $coord[0],
                         'longitude' => $coord[1],
-                        'date' => $date,
+                        'date' => $coord[2],
                         'key' => $k,
                         'value' => $v
-                    ));
+                    ]);
                 }
             } else {
-                $this->eventLogger->log(sprintf("Conditions for coordinate '%s %s' not found", $coord[0], $coord[1]), array(), null, EventLogger::TYPE_WARN);
+                $this->eventLogger->log(sprintf("Conditions for coordinate '%s %s' not found", $coord[0], $coord[1]), [], null, EventLogger::TYPE_WARN);
             }
         }
     }

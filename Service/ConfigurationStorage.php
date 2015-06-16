@@ -29,7 +29,7 @@ class ConfigurationStorage
         if (!$this->storageApiClient->bucketExists(self::BUCKET_ID)) {
             throw new ConfigurationException(sprintf('Configuration bucket %s does not exist', self::BUCKET_ID));
         }
-        $result = array();
+        $result = [];
         foreach ($this->storageApiClient->listTables(self::BUCKET_ID) as $table) {
             $result[] = $table['name'];
         }
@@ -50,7 +50,7 @@ class ConfigurationStorage
         $csv = $this->storageApiClient->exportTable($configTableId);
         $table = StorageApiClient::parseCsv($csv, true);
 
-        $conditions = array();
+        $conditions = [];
         $units = null;
         $tableInfo = $this->storageApiClient->getTable($configTableId);
         foreach ($tableInfo['attributes'] as $attr) {
@@ -73,11 +73,7 @@ class ConfigurationStorage
                 .'tableId,latitudeCol,longitudeCol', $configTableId));
         }
 
-        $result = array(
-            'conditions' => $conditions,
-            'units' => $units,
-            'tables' => array()
-        );
+        $result = [];
         foreach ($table as $t) {
             try {
                 if (!$this->storageApiClient->tableExists($t['tableId'])) {
@@ -99,11 +95,14 @@ class ConfigurationStorage
                 throw new ConfigurationException(sprintf('Column with latitudes %s does not exist in the table', $t['longitudeCol']));
             }
 
-            $result['tables'][] = array(
+            $result[] = [
                 'tableId' => $t['tableId'],
                 'latitudeCol' => $t['latitudeCol'],
-                'longitudeCol' => $t['longitudeCol']
-            );
+                'longitudeCol' => $t['longitudeCol'],
+                'timeCol' => isset($t['timeCol']) ? $t['timeCol'] : null,
+                'conditions' => !empty($t['conditions']) ? explode(',', $t['conditions']) : $conditions,
+                'units' => !empty($t['units']) ? $t['units'] : $units,
+            ];
         }
         return $result;
     }

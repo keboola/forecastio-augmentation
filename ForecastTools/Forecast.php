@@ -180,8 +180,15 @@ class Forecast
             'complete' => function (CompleteEvent $event) use (&$responses) {
                 $responses[] = $event->getResponse()->getBody();
             },
-            'error' => function (ErrorEvent $event) {
-                throw new Exception('Request to Forecast.io failed: ' . $event->getRequest()->getUrl() . ' - Error: ' . $event->getException()->getMessage());
+            'error' => function (ErrorEvent $event) use (&$responses) {
+                $errorBody = $event->getException()->getResponse()->json();
+                $error = isset($errorBody['error']) ? $errorBody['error'] : $event->getException()->getMessage();
+                $coords = substr($event->getRequest()->getPath(), strrpos($event->getRequest()->getPath(), '/')+1);
+                $responses[] = json_encode([
+                    'coords' => substr($coords, 0, strrpos($coords, ',')),
+                    'time' => substr($coords, strrpos($coords, ',')+1),
+                    'error' => $error
+                ]);
             }
         ));
 
