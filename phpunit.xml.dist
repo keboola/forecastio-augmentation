@@ -16,6 +16,7 @@
     </php>
     <testsuites>
         <testsuite name="part-1">
+            <file>Tests/SharedStorageTest.php</file>
             <file>Tests/UserStorageTest.php</file>
             <file>Tests/FunctionalTest.php</file>
         </testsuite>

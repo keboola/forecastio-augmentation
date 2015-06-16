@@ -28,11 +28,16 @@ class SharedStorage
         return date('Ymd:H', strtotime($date));
     }
 
+    public static function getCacheKey($lat, $lon, $date)
+    {
+        return sprintf('%s:%s:%s', round($lat, 2), round($lon, 2), self::getCacheTimeFormat($date));
+    }
+
     public function get($coordinates, $conditions = [])
     {
         $locations = array();
         foreach ($coordinates as $c) {
-            $locations[] = round($c[0], 2) . ':' . round($c[1], 2) . ':' . self::getCacheTimeFormat($c[2]);
+            $locations[] = self::getCacheKey($c[0], $c[1], $c[2]);
         }
         if (count($conditions)) {
             $query = $this->db->fetchAll(
@@ -61,7 +66,7 @@ class SharedStorage
     {
         try {
             $this->db->insert(self::TABLE_NAME, [
-                'location' => round($lat, 2) . ':' . round($lon, 2) . ':' . self::getCacheTimeFormat($date),
+                'location' => self::getCacheKey($lat, $lon, $date),
                 '`key`' => $key,
                 'value' => $value
             ]);

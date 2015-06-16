@@ -147,10 +147,10 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             // Round coordinates to two decimals, will be sufficient for weather requests
             $lat = round($coord[0], 2);
             $lon = round($coord[1], 2);
-            $locKey = sprintf('%s:%s:%s', $lat, $lon, SharedStorage::getCacheTimeFormat($coord[2]));
-            if (!isset($cache[$locKey])) {
-                if (!isset($paramsForApi[$locKey])) {
-                    $paramsForApi[$locKey] = [
+            $cacheKey = SharedStorage::getCacheKey($coord[0], $coord[1], $coord[2]);
+            if (!isset($cache[$cacheKey])) {
+                if (!isset($paramsForApi[$cacheKey])) {
+                    $paramsForApi[$cacheKey] = [
                         'latitude' => $lat,
                         'longitude' => $lon,
                         'time' => strtotime($coord[2]),
@@ -159,8 +159,8 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     ];
                 }
             } else {
-                foreach ($cache[$locKey] as $sc) {
-                    $result[$locKey][$sc['key']] = $sc['value'];
+                foreach ($cache[$cacheKey] as $sc) {
+                    $result[$cacheKey][$sc['key']] = $sc['value'];
                 }
             }
         }
@@ -179,11 +179,11 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     $conditions = (array)$data['currently'];
                     $time = date('Y-m-d H:i:s', $conditions['time']);
                     unset($conditions['time']);
-                    $locKey = sprintf('%s:%s:%s', $r->getLatitude(), $r->getLongitude(), SharedStorage::getCacheTimeFormat($time));
+                    $cacheKey = SharedStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time);
                     foreach ($conditions as $k => $v) {
                         $this->sharedStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v);
                         if (!count($conditions) || in_array($k, $conditions)) {
-                            $result[$locKey][$k] = $v;
+                            $result[$cacheKey][$k] = $v;
                         }
                     }
                 }
@@ -191,9 +191,9 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         }
 
         foreach ($coordinates as $coord) {
-            $locKey = sprintf('%s:%s:%s', round($coord[0], 2), round($coord[1], 2), SharedStorage::getCacheTimeFormat($coord[2]));
-            if (isset($result[$locKey])) {
-                $res = $result[$locKey];
+            $cacheKey = SharedStorage::getCacheKey($coord[0], $coord[1], $coord[2]);
+            if (isset($result[$cacheKey])) {
+                $res = $result[$cacheKey];
                 foreach ($res as $k => $v) {
                     if ($units == self::TEMPERATURE_UNITS_US) {
                         switch ($k) {

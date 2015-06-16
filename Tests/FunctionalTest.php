@@ -46,6 +46,7 @@ class FunctionalTest extends AbstractTest
 
         $stmt = $db->prepare(file_get_contents(__DIR__ . '/../db.sql'));
         $stmt->execute();
+        $stmt->closeCursor();
 
         $sharedStorage = new SharedStorage($db);
 
@@ -75,6 +76,25 @@ class FunctionalTest extends AbstractTest
 
     public function testAugmentation()
     {
+        $this->jobExecutor->execute(new Job(array(
+            'id' => uniqid(),
+            'runId' => uniqid(),
+            'token' => $this->storageApiClient->getLogData(),
+            'component' => self::APP_NAME,
+            'command' => 'run',
+            'params' => array(
+                'config' => $this->configId
+            )
+        )));
+
+        $dataTableId = sprintf('%s.%s', UserStorage::BUCKET_ID, $this->configId);
+        $this->assertTrue($this->storageApiClient->tableExists($dataTableId));
+        $export = $this->storageApiClient->exportTable($dataTableId);
+        $csv = StorageApiClient::parseCsv($export, true);
+        $this->assertGreaterThan(4, count($csv));
+
+
+        // Once again for cached results
         $this->jobExecutor->execute(new Job(array(
             'id' => uniqid(),
             'runId' => uniqid(),
