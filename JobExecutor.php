@@ -128,11 +128,11 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     public function processBatch($configId, $coordinates, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
     {
         // Basically analyze validity of coordinates and date
-        foreach ($coordinates as $i => &$coordinate) {
-            if ($coordinate['lat'] === null || $coordinate['lon'] === null || (!$coordinate['lat'] && !$coordinate['lon'])
-                || !is_numeric($coordinate['lat']) || !is_numeric($coordinate['lon'])) {
+        foreach ($coordinates as $i => &$cd) {
+            if ($cd['lat'] === null || $cd['lon'] === null || (!$cd['lat'] && !$cd['lon'])
+                || !is_numeric($cd['lat']) || !is_numeric($cd['lon'])) {
                 $this->eventLogger->log(
-                    sprintf("Value '%s %s' is not valid coordinate", $coordinate['lat'], $coordinate['lon']),
+                    sprintf("Value '%s %s' is not valid coordinate", $cd['lat'], $cd['lon']),
                     [],
                     null,
                     EventLogger::TYPE_WARN
@@ -140,32 +140,24 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 unset($coordinates[$i]);
                 continue;
             }
-            if (!isset($coordinate['time'])) {
-                $coordinate['time'] = $this->actualTime;
+            if (!isset($cd['time'])) {
+                $cd['time'] = $this->actualTime;
             } else {
-                if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $coordinate['time'])) {
-                    if (substr($coordinate['time'], 0, 10) > date('Y-m-d')) {
+                if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $cd['time'])) {
+                    if (substr($cd['time'], 0, 10) > date('Y-m-d')) {
                         $this->eventLogger->log(
-                            sprintf("Date '%s' for coordinate '%s %s' is in future",
-                                $coordinate['time'],
-                                $coordinate['lat'],
-                                $coordinate['lon']
-                            ),
+                            sprintf("Date '%s' for coordinate '%s %s' is in future", $cd['time'], $cd['lat'], $cd['lon']),
                             [],
                             null,
                             EventLogger::TYPE_WARN
                         );
                         unset($coordinates[$i]);
                     }
-                } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $coordinate['time'])) {
-                    $coordinate['daily'] = true;
-                    if ($coordinate['time'] > date('Y-m-d')) {
+                } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $cd['time'])) {
+                    $cd['daily'] = true;
+                    if ($cd['time'] > date('Y-m-d')) {
                         $this->eventLogger->log(
-                            sprintf("Date '%s' for coordinate '%s %s' is in future",
-                                $coordinate['time'],
-                                $coordinate['lat'],
-                                $coordinate['lon']
-                            ),
+                            sprintf("Date '%s' for coordinate '%s %s' is in future", $cd['time'], $cd['lat'], $cd['lon']),
                             [],
                             null,
                             EventLogger::TYPE_WARN
@@ -174,12 +166,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     }
                 } else {
                     $this->eventLogger->log(
-                        sprintf(
-                            "Date value %s for coordinate '%s %s' is not valid",
-                            $coordinate['time'],
-                            $coordinate['lat'],
-                            $coordinate['lon']
-                        ),
+                        sprintf("Date value %s for coordinate '%s %s' is not valid", $cd['time'], $cd['lat'], $cd['lon']),
                         [],
                         null,
                         EventLogger::TYPE_WARN
