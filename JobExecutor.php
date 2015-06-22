@@ -147,7 +147,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     // pass
                 } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $coordinate['time'])) {
                     $coordinate['daily'] = true;
-                }  else {
+                } else {
                     $this->eventLogger->log(
                         sprintf(
                             "Date value %s for coordinate '%s %s' is not valid",
