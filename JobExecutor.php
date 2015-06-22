@@ -55,7 +55,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->cacheStorage = $cacheStorage;
         $this->temp = $temp;
         $this->logger = $logger;
-        $this->actualTime = date('Y-m-d H:i:s');
+        $this->actualTime = date('Y-m-d 12:00:00');
 
         $this->forecast = new Forecast($forecastIoKey, 10);
     }
@@ -144,9 +144,34 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 $coordinate['time'] = $this->actualTime;
             } else {
                 if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $coordinate['time'])) {
-                    // pass
+                    if (substr($coordinate['time'], 0, 10) > date('Y-m-d')) {
+                        $this->eventLogger->log(
+                            sprintf("Date '%s' for coordinate '%s %s' is in future",
+                                $coordinate['time'],
+                                $coordinate['lat'],
+                                $coordinate['lon']
+                            ),
+                            [],
+                            null,
+                            EventLogger::TYPE_WARN
+                        );
+                        unset($coordinates[$i]);
+                    }
                 } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $coordinate['time'])) {
                     $coordinate['daily'] = true;
+                    if ($coordinate['time'] > date('Y-m-d')) {
+                        $this->eventLogger->log(
+                            sprintf("Date '%s' for coordinate '%s %s' is in future",
+                                $coordinate['time'],
+                                $coordinate['lat'],
+                                $coordinate['lon']
+                            ),
+                            [],
+                            null,
+                            EventLogger::TYPE_WARN
+                        );
+                        unset($coordinates[$i]);
+                    }
                 } else {
                     $this->eventLogger->log(
                         sprintf(
