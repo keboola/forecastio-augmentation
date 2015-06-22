@@ -179,7 +179,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             $paramsForApi[$key] = [
                 'latitude' => round($c['lat'], 2),
                 'longitude' => round($c['lon'], 2),
-                'time' => strtotime($c['time']),
+                'time' => $c['daily'] ? $c['time'].'T12:00:00' : str_replace(' ', 'T', $c['time']),
                 'units' => 'si',
                 'exclude' => 'currently,minutely,alerts,flags'
             ];
@@ -192,7 +192,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 if (isset($data['error'])) {
                     $this->logger->debug('Getting conditions failed', [
                         'coords' => $data['coords'],
-                        'time' => date('Y-m-d H:i:s', $data['time']),
+                        'time' => $data['time'],
                         'error' => $data['error']
                     ]);
                 } else {
