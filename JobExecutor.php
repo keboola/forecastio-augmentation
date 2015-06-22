@@ -95,27 +95,32 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         // Query Geocoding API by 50 queries
         $batchNumber = 1;
         $countInBatch = 50;
-        $lines = [];
+        $coordinates = [];
         $handle = fopen($dataFile, "r");
         if ($handle) {
             while (($line = fgetcsv($handle)) !== false) {
-                $lines[] = $line;
+                $coordinates[] = [
+                    'lat' => isset($line[0]) ? $line[0] : null,
+                    'lon' => isset($line[1]) ? $line[1] : null,
+                    'time' => isset($line[2]) ? $line[2] : null,
+                    'daily' => false
+                ];
 
                 // Run for every 50 lines
-                if (count($lines) >= $countInBatch) {
-                    $this->processBatch($configId, $lines, $conditions, $units);
+                if (count($coordinates) >= $countInBatch) {
+                    $this->processBatch($configId, $coordinates, $conditions, $units);
                     $this->eventLogger->log(sprintf('Processed %d queries', $batchNumber * $countInBatch));
 
-                    $lines = [];
+                    $coordinates = [];
                     $batchNumber++;
                 }
 
             }
         }
-        if (count($lines)) {
+        if (count($coordinates)) {
             // Run the rest of lines above the highest multiple of 50
-            $this->processBatch($configId, $lines, $conditions, $units);
-            $this->eventLogger->log(sprintf('Processed %d queries', (($batchNumber - 1) * $countInBatch) + count($lines)));
+            $this->processBatch($configId, $coordinates, $conditions, $units);
+            $this->eventLogger->log(sprintf('Processed %d queries', (($batchNumber - 1) * $countInBatch) + count($coordinates)));
         }
         fclose($handle);
     }
@@ -123,48 +128,61 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     public function processBatch($configId, $coordinates, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
     {
         // Basically analyze validity of coordinates and date
-        foreach ($coordinates as $i => &$c) {
-            if ($c[0] === null || $c[1] === null || (!$c[0] && !$c[1]) || !is_numeric($c[0]) || !is_numeric($c[1])) {
-                $this->eventLogger->log(sprintf("Value '%s %s' is not valid coordinate", $c[0], $c[1]), [], null, EventLogger::TYPE_WARN);
+        foreach ($coordinates as $i => &$coordinate) {
+            if ($coordinate['lat'] === null || $coordinate['lon'] === null || (!$coordinate['lat'] && !$coordinate['lon'])
+                || !is_numeric($coordinate['lat']) || !is_numeric($coordinate['lon'])) {
+                $this->eventLogger->log(
+                    sprintf("Value '%s %s' is not valid coordinate", $coordinate['lat'], $coordinate['lon']),
+                    [],
+                    null,
+                    EventLogger::TYPE_WARN
+                );
                 unset($coordinates[$i]);
                 continue;
             }
-            if (!isset($c[2])) {
-                $c[2] = $this->actualTime;
+            if (!isset($coordinate['time'])) {
+                $coordinate['time'] = $this->actualTime;
             } else {
-                $timestamp = strtotime($c[2]);
-                if (!$timestamp) {
-                    $this->eventLogger->log(sprintf("Time value %s for coordinates '%s %s' is not valid", $c[2], $c[0], $c[1]), [], null, EventLogger::TYPE_WARN);
+                if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $coordinate['time'])) {
+                    // pass
+                } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $coordinate['time'])) {
+                    $coordinate['daily'] = true;
+                }  else {
+                    $this->eventLogger->log(
+                        sprintf(
+                            "Date value %s for coordinate '%s %s' is not valid",
+                            $coordinate['time'],
+                            $coordinate['lat'],
+                            $coordinate['lon']
+                        ),
+                        [],
+                        null,
+                        EventLogger::TYPE_WARN
+                    );
                     unset($coordinates[$i]);
                 }
             }
         }
         $coordinates = array_values($coordinates);
 
-        $cache = $this->cacheStorage->get($coordinates, $conditions);
-        $result = [];
+
+        // Get and save conditions missing in cache
+        $coordinatesByKey = [];
+        foreach ($coordinates as $c) {
+            $coordinatesByKey[CacheStorage::getCacheKey($c['lat'], $c['lon'], $c['time'], $c['daily'])] = $c;
+        }
+        $missingKeys = $this->cacheStorage->missing(array_keys($coordinatesByKey));
 
         $paramsForApi = [];
-        foreach ($coordinates as $coord) {
-            // Round coordinates to two decimals, will be sufficient for weather requests
-            $lat = round($coord[0], 2);
-            $lon = round($coord[1], 2);
-            $cacheKey = CacheStorage::getCacheKey($coord[0], $coord[1], $coord[2]);
-            if (!isset($cache[$cacheKey])) {
-                if (!isset($paramsForApi[$cacheKey])) {
-                    $paramsForApi[$cacheKey] = [
-                        'latitude' => $lat,
-                        'longitude' => $lon,
-                        'time' => strtotime($coord[2]),
-                        'units' => 'si',
-                        'exclude' => 'minutely,hourly,daily,alerts,flags'
-                    ];
-                }
-            } else {
-                foreach ($cache[$cacheKey] as $sc) {
-                    $result[$cacheKey][$sc['key']] = $sc['value'];
-                }
-            }
+        foreach ($missingKeys as $key) {
+            $c = $coordinatesByKey[$key];
+            $paramsForApi[$key] = [
+                'latitude' => round($c['lat'], 2),
+                'longitude' => round($c['lon'], 2),
+                'time' => strtotime($c['time']),
+                'units' => 'si',
+                'exclude' => 'currently,minutely,alerts,flags'
+            ];
         }
 
         if (count($paramsForApi)) {
@@ -178,66 +196,83 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                         'error' => $data['error']
                     ]);
                 } else {
-                    $currentlyData = (array)$data['currently'];
-                    $time = date('Y-m-d H:i:s', $currentlyData['time']);
-                    unset($currentlyData['time']);
-                    $cacheKey = CacheStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time);
-                    foreach ($currentlyData as $k => $v) {
-                        $this->cacheStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v);
-                        if (!count($conditions) || in_array($k, $conditions)) {
-                            $result[$cacheKey][$k] = $v;
+                    if (isset($data['daily']->data[0])) {
+                        $dailyData = (array)$data['daily']->data[0];
+                        $time = date('Y-m-d H:i:s', $dailyData['time']);
+                        unset($dailyData['time']);
+                        foreach ($dailyData as $k => $v) {
+                            $this->cacheStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v, true);
+                        }
+                    }
+                    if (isset($data['hourly']->data)) {
+                        foreach ($data['hourly']->data as $hourlyData) {
+                            $hourlyData = (array)$hourlyData;
+                            $time = date('Y-m-d H:i:s', $hourlyData['time']);
+                            unset($hourlyData['time']);
+                            foreach ($hourlyData as $k => $v) {
+                                $this->cacheStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v);
+                            }
                         }
                     }
                 }
             }
         }
 
-        foreach ($coordinates as $coord) {
-            $cacheKey = CacheStorage::getCacheKey($coord[0], $coord[1], $coord[2]);
-            if (isset($result[$cacheKey])) {
-                $res = $result[$cacheKey];
-                foreach ($res as $k => $v) {
+
+        // Get data from cache
+        $data = $this->cacheStorage->get(array_keys($coordinatesByKey), $conditions);
+
+        foreach ($coordinates as $c) {
+            $cacheKey = CacheStorage::getCacheKey($c['lat'], $c['lon'], $c['time'], $c['daily']);
+            if (isset($data[$cacheKey])) {
+                $locationData = $data[$cacheKey];
+                foreach ($locationData as $ld) {
                     if ($units == self::TEMPERATURE_UNITS_US) {
-                        switch ($k) {
+                        switch ($ld['key']) {
                             case 'temperature':
                             case 'temperatureMin':
                             case 'temperatureMax':
                             case 'apparentTemperature':
                             case 'dewPoint':
                                 // From Fahrenheit To Celsius
-                                $v = ($v * (9 / 5)) + 32;
+                                $ld['value'] = ($ld['value'] * (9 / 5)) + 32;
                                 break;
                             case 'precipAccumulation':
                                 // From centimeters To inches
-                                $v = $v * 0.393701;
+                                $ld['value'] = $ld['value'] * 0.393701;
                                 break;
                             case 'nearestStormDistance':
                             case 'visibility':
                                 // From kilometers To miles
-                                $v = $v * 0.621371;
+                                $ld['value'] = $ld['value'] * 0.621371;
                                 break;
                             case 'precipIntensity':
                             case 'precipIntensityMax':
                                 // From millimeters per hour To inches per hour
-                                $v = $v * 0.03937;
+                                $ld['value'] = $ld['value'] * 0.03937;
                                 break;
                             case 'windSpeed':
                                 // From meters per second To miles per hour
-                                $v = $v * 2.2369362920544025;
+                                $ld['value'] = $ld['value'] * 2.2369362920544025;
                                 break;
                         }
                     }
 
                     $this->userStorage->save($configId, [
-                        'latitude' => $coord[0],
-                        'longitude' => $coord[1],
-                        'date' => $coord[2],
-                        'key' => $k,
-                        'value' => $v
+                        'latitude' => $c['lat'],
+                        'longitude' => $c['lon'],
+                        'date' => $c['time'],
+                        'key' => $ld['key'],
+                        'value' => $ld['value']
                     ]);
                 }
             } else {
-                $this->eventLogger->log(sprintf("Conditions for coordinate '%s %s' not found", $coord[0], $coord[1]), [], null, EventLogger::TYPE_WARN);
+                $this->eventLogger->log(
+                    sprintf("Conditions for coordinate '%s %s' not found", $c['lat'], $c['lon']),
+                    [],
+                    null,
+                    EventLogger::TYPE_WARN
+                );
             }
         }
     }
