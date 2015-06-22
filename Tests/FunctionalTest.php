@@ -125,9 +125,6 @@ class FunctionalTest extends AbstractTest
         $csv = StorageApiClient::parseCsv($export, true);
         $this->assertCount(20, $csv);
 
-        $this->assertEquals(4, $this->db->fetchColumn('SELECT COUNT(DISTINCT location) FROM forecastio_cache'), 'There should be 4 different cached coords');
-
-
         // Get historical results
         $this->jobExecutor->execute(new Job([
             'id' => uniqid(),

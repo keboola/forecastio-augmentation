@@ -56,16 +56,16 @@ class CacheStorageTest extends AbstractTest
         }
 
         // Get all conditions
-        $result = $cacheStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]]);
-        $this->assertCount(1, $result);
         $cacheKey = CacheStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
+        $result = $cacheStorage->get([$cacheKey]);
+        $this->assertCount(1, $result);
         $this->assertArrayHasKey($cacheKey, $result);
         $this->assertCount(2, $result[$cacheKey]);
 
         // Get one condition
-        $result = $cacheStorage->get([[$data[1]['lat'], $data[1]['lon'], $data[1]['time']]], ['temperature']);
-        $this->assertCount(1, $result);
         $cacheKey = CacheStorage::getCacheKey($data[1]['lat'], $data[1]['lon'], $data[1]['time']);
+        $result = $cacheStorage->get([$cacheKey], ['temperature']);
+        $this->assertCount(1, $result);
         $this->assertArrayHasKey($cacheKey, $result);
         $this->assertCount(1, $result[$cacheKey]);
     }
