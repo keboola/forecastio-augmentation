@@ -208,12 +208,17 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                         'error' => $data['error']
                     ]);
                 } else {
+                    $dataToSave = [];
                     if (isset($data['daily']->data[0])) {
                         $dailyData = (array)$data['daily']->data[0];
                         $time = date('Y-m-d H:i:s', $dailyData['time']);
                         unset($dailyData['time']);
                         foreach ($dailyData as $k => $v) {
-                            $this->cacheStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v, true);
+                            $dataToSave[] = [
+                                'location' => CacheStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time, true),
+                                'key' => $k,
+                                'value' => $v
+                            ];
                         }
                     }
                     if (isset($data['hourly']->data)) {
@@ -222,10 +227,15 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                             $time = date('Y-m-d H:i:s', $hourlyData['time']);
                             unset($hourlyData['time']);
                             foreach ($hourlyData as $k => $v) {
-                                $this->cacheStorage->save($r->getLatitude(), $r->getLongitude(), $time, $k, $v);
+                                $dataToSave[] = [
+                                    'location' => CacheStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time, false),
+                                    'key' => $k,
+                                    'value' => $v
+                                ];
                             }
                         }
                     }
+                    $this->cacheStorage->saveBulk($dataToSave);
                 }
             }
         }
