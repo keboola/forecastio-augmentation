@@ -259,6 +259,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     }
 
                     $this->userStorage->save($configId, [
+                        'primary' => md5($c['lat'].':'.$c['lon'].':'.$c['time'].':'.$ld['key']),
                         'latitude' => $c['lat'],
                         'longitude' => $c['lon'],
                         'date' => $c['time'],

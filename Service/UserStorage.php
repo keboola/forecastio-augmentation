@@ -33,8 +33,8 @@ class UserStorage
     const BUCKET_ID = 'in.c-ag-forecastio';
 
     public $tables = array(
-        'columns' => array('latitude', 'longitude', 'date', 'key', 'value'),
-        'primaryKey' => null
+        'columns' => array('primary', 'latitude', 'longitude', 'date', 'key', 'value'),
+        'primaryKey' => 'primary'
     );
 
 
@@ -63,7 +63,7 @@ class UserStorage
         foreach ($this->files as $configId => $file) {
             $tableId = self::BUCKET_ID . "." . $configId;
             try {
-                $options = array();
+                $options = array('incremental' => 1);
                 if (!empty($this->tables['primaryKey'])) {
                     $options['primaryKey'] = $this->tables['primaryKey'];
                 }
