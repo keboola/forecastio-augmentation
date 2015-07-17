@@ -88,18 +88,20 @@ class CacheStorage
 
     public function saveBulk($data)
     {
-        $sql = 'REPLACE INTO '.self::TABLE_NAME.' (`location`, `key`, `value`) VALUES ';
-        $sqlValues = [];
-        foreach ($data as $d) {
-            $sqlValues[] = sprintf(
-                '(%s, %s, %s)',
-                $this->db->quote($d['location']),
-                $this->db->quote($d['key']),
-                $this->db->quote($d['value'])
-            );
-        }
-        $sql .= implode(', ', $sqlValues) . ';';
+        if (count($data)) {
+            $sql = 'REPLACE INTO ' . self::TABLE_NAME . ' (`location`, `key`, `value`) VALUES ';
+            $sqlValues = [];
+            foreach ($data as $d) {
+                $sqlValues[] = sprintf(
+                    '(%s, %s, %s)',
+                    $this->db->quote($d['location']),
+                    $this->db->quote($d['key']),
+                    $this->db->quote($d['value'])
+                );
+            }
+            $sql .= implode(', ', $sqlValues) . ';';
 
-        $this->db->executeQuery($sql);
+            $this->db->executeQuery($sql);
+        }
     }
 }
