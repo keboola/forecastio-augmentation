@@ -5,3 +5,9 @@ CREATE TABLE `forecastio_cache` (
   `value` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`location`,`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `forecastio_calls_count`;
+CREATE TABLE `forecastio_calls_count` (
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `count` int(10) unsigned NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
