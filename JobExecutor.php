@@ -47,6 +47,8 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
 
     protected $actualTime;
 
+    protected $apiCallsCount = 0;
+
     const TEMPERATURE_UNITS_SI = 'si';
     const TEMPERATURE_UNITS_US = 'us';
 
@@ -198,6 +200,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         }
 
         if (count($paramsForApi)) {
+            $this->apiCallsCount += count($paramsForApi);
             foreach ($this->forecast->getData($paramsForApi) as $r) {
                 /** @var Response $r */
                 $data = (array)$r->getRawData();
@@ -298,5 +301,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 );
             }
         }
+
+        $this->cacheStorage->logApiCallsCount($this->apiCallsCount);
     }
 }

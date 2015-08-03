@@ -17,6 +17,7 @@ class CacheStorage
      */
     protected $db;
     const TABLE_NAME = 'forecastio_cache';
+    const CALLS_COUNT_TABLE_NAME = 'forecastio_calls_count';
 
     public function __construct(Connection $db)
     {
@@ -103,5 +104,12 @@ class CacheStorage
 
             $this->db->executeQuery($sql);
         }
+    }
+
+    public function logApiCallsCount($count)
+    {
+        $this->db->insert(self::CALLS_COUNT_TABLE_NAME, [
+            'count' => $count
+        ]);
     }
 }
