@@ -7,12 +7,12 @@
 
 namespace Keboola\ForecastIoAugmentation\Service;
 
-use Keboola\Syrup\Exception\SyrupComponentException;
+use Keboola\Syrup\Exception\UserException;
 
-class ConfigurationException extends SyrupComponentException
+class ConfigurationException extends UserException
 {
     public function __construct($message, $previous = null)
     {
-        parent::__construct(400, $message, $previous);
+        parent::__construct($message, $previous);
     }
 }
