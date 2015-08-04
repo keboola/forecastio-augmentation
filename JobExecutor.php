@@ -308,6 +308,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             $this->job->getProject()['name'],
             $this->job->getToken()['id'],
             $this->job->getToken()['description'],
-            $this->apiCallsCount);
+            $this->apiCallsCount
+        );
     }
 }
