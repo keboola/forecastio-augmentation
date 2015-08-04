@@ -4,7 +4,7 @@ CREATE TABLE `forecastio_cache` (
   `key` varchar(100) NOT NULL DEFAULT '',
   `value` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`location`,`key`),
-  KEY `idx_timestamp` (`timestamp`)
+  KEY `idx_timestamp` (`timestamp`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `forecastio_calls_count`;
