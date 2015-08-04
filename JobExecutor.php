@@ -68,6 +68,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
      */
     public function execute(Job $job)
     {
+        $this->setJob($job);
         $configurationStorage = new ConfigurationStorage($this->storageApi);
         $this->eventLogger = new EventLogger($this->storageApi, $job->getId());
         $this->userStorage = new UserStorage($this->storageApi, $this->temp);
@@ -302,6 +303,11 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             }
         }
 
-        $this->cacheStorage->logApiCallsCount($this->apiCallsCount);
+        $this->cacheStorage->logApiCallsCount(
+            $this->job->getProject()['id'],
+            $this->job->getProject()['name'],
+            $this->job->getToken()['id'],
+            $this->job->getToken()['description'],
+            $this->apiCallsCount);
     }
 }

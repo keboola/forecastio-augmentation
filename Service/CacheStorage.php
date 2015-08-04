@@ -106,9 +106,13 @@ class CacheStorage
         }
     }
 
-    public function logApiCallsCount($count)
+    public function logApiCallsCount($projectId, $projectName, $tokenId, $tokenDesc, $count)
     {
         $this->db->insert(self::CALLS_COUNT_TABLE_NAME, [
+            'project_id' => $projectId,
+            'project_name' => $projectName,
+            'token_id' => $tokenId,
+            'token_desc' => $tokenDesc,
             'count' => $count
         ]);
     }
