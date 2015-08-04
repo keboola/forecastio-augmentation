@@ -11,9 +11,9 @@ CREATE TABLE `forecastio_cache` (
 DROP TABLE IF EXISTS `forecastio_calls_count`;
 CREATE TABLE `forecastio_calls_count` (
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `project_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `project_id` int(10) unsigned DEFAULT '0',
   `project_name` varchar(128) DEFAULT NULL,
-  `token_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `token_id` int(10) unsigned DEFAULT '0',
   `token_desc` varchar(128) DEFAULT NULL,
   `count` int(10) unsigned NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
