@@ -3,8 +3,9 @@ CREATE TABLE `forecastio_cache` (
   `location` varchar(255) NOT NULL DEFAULT '',
   `key` varchar(100) NOT NULL DEFAULT '',
   `value` varchar(255) DEFAULT NULL,
+  `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`location`,`key`),
-  KEY `idx_timestamp` (`timestamp`) USING BTREE
+  KEY `idx_timestamp` (`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `forecastio_calls_count`;
@@ -15,4 +16,4 @@ CREATE TABLE `forecastio_calls_count` (
   `token_id` int(10) unsigned NOT NULL DEFAULT '0',
   `token_desc` varchar(128) DEFAULT NULL,
   `count` int(10) unsigned NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
