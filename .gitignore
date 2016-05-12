@@ -1,5 +1,6 @@
 .idea
-parameters.yml
 composer.phar
 vendor
-test.sh
+run-test.sh
+data
+build

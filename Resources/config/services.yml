@@ -1,8 +1,0 @@
-
-services:
-  ag_forecastio.shared_storage:
-      class: Keboola\ForecastIoAugmentation\Service\CacheStorage
-      arguments: [@doctrine.dbal.default_connection]
-  ag_forecastio.job_executor:
-      class: Keboola\ForecastIoAugmentation\JobExecutor
-      arguments: [@ag_forecastio.shared_storage, @syrup.temp, @logger, %forecastio_key%]

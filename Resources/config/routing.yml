@@ -1,3 +1,0 @@
-#default:
-#  resource: "@KeboolaForecastIoExtractorBundle/Controller/ApiController.php"
-#  type: annotation

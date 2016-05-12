@@ -5,23 +5,28 @@
  * @author Jakub Matejka <jakub@keboola.com>
  */
 
-namespace Keboola\ForecastIoAugmentation\Service;
+namespace Keboola\ForecastIoAugmentation;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
+use Doctrine\DBAL\DriverManager;
 
 class CacheStorage
 {
-    /**
-     * @var \Doctrine\DBAL\Connection
-     */
+    /** @var Connection */
     protected $db;
+
     const TABLE_NAME = 'forecastio_cache';
     const CALLS_COUNT_TABLE_NAME = 'forecastio_calls_count';
 
-    public function __construct(Connection $db)
+    public function __construct($params)
     {
-        $this->db = $db;
+        $this->db = DriverManager::getConnection($params);
+    }
+
+    public static function roundCoordinate($value)
+    {
+        return round($value, 1);
     }
 
     public static function getCacheTimeFormat($date, $daily = false)
@@ -32,10 +37,15 @@ class CacheStorage
 
     public static function getCacheKey($lat, $lon, $date, $daily = false)
     {
-        return sprintf('%s:%s:%s', round($lat, 2), round($lon, 2), self::getCacheTimeFormat($date, $daily));
+        return sprintf(
+            '%s:%s:%s',
+            self::roundCoordinate($lat),
+            self::roundCoordinate($lon),
+            self::getCacheTimeFormat($date, $daily)
+        );
     }
 
-    public function missing($keys)
+    public function getMissingKeys($keys)
     {
         $result = $this->db->fetchAll(
             'SELECT location FROM forecastio_cache WHERE location IN (?) GROUP BY location',
