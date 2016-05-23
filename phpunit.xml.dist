@@ -18,6 +18,7 @@
             <file>tests/Keboola/ForecastioAugmentation/CacheStorageTest.php</file>
             <file>tests/Keboola/ForecastioAugmentation/UserStorageTest.php</file>
             <file>tests/Keboola/ForecastioAugmentation/AugmentationTest.php</file>
+            <file>tests/Keboola/ForecastioAugmentation/FunctionalTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>

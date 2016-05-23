@@ -54,12 +54,12 @@ if (!isset($config['image_parameters']['database']['#password'])) {
     exit(1);
 }
 
-if (!isset($config['parameters']['tables'])) {
-    print("Missing parameter 'tables'");
+if (!isset($config['parameters']['inputTables'])) {
+    print("Missing parameter 'inputTables'");
     exit(1);
 }
-if (!isset($config['parameters']['bucket'])) {
-    print "Missing parameter bucket";
+if (!isset($config['parameters']['outputTable'])) {
+    print "Missing parameter outputTable";
     exit(1);
 }
 
@@ -78,15 +78,15 @@ try {
         [
             'driver' => $config['image_parameters']['database']['driver'],
             'host' => $config['image_parameters']['database']['#host'],
-            'name' => $config['image_parameters']['database']['#name'],
+            'dbname' => $config['image_parameters']['database']['#name'],
             'user' => $config['image_parameters']['database']['#user'],
             'password' => $config['image_parameters']['database']['#password'],
         ],
         "{$arguments['data']}/out/tables",
-        $config['parameters']['bucket']
+        $config['parameters']['outputTable']
     );
 
-    foreach ($config['parameters']['tables'] as $row => $table) {
+    foreach ($config['parameters']['inputTables'] as $row => $table) {
         if (!isset($table['tableId'])) {
             print("Missing 'tableId' key of parameter 'tables' on row $row");
             exit(1);
@@ -103,7 +103,8 @@ try {
             print("Table '{$table['tableId']}' was not injected to the app");
             exit(1);
         }
-        $manifest = Yaml::parse(file_get_contents("{$arguments['data']}/in/tables/{$table['tableId']}.csv.manifest"));
+        $manifest = json_decode(file_get_contents("{$arguments['data']}/in/tables/{$table['tableId']}.csv.manifest"), true);
+
         if (!in_array($table['latitude'], $manifest['columns'])) {
             print("Column with latitudes '{$table['latitude']}' is missing from table '{$table['tableId']}'");
             exit(1);
@@ -112,7 +113,7 @@ try {
             print("Column with longitudes '{$table['longitude']}' is missing from table '{$table['tableId']}'");
             exit(1);
         }
-        if ($table['time'] && !in_array($table['time'], $manifest['columns'])) {
+        if (!empty($table['time']) && !in_array($table['time'], $manifest['columns'])) {
             print("Column with times '{$table['time']}' is missing from table '{$table['tableId']}'");
             exit(1);
         }

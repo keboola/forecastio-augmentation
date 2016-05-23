@@ -30,7 +30,7 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $bucket = 'b' . uniqid();
+        $outputTable = 't' . uniqid();
         $dbParams = [
             'driver' => 'pdo_mysql',
             'host' => DB_HOST,
@@ -51,10 +51,10 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
             FORECASTIO_KEY,
             $dbParams,
             $this->temp->getTmpFolder(),
-            $bucket
+            $outputTable
         );
 
-        $this->outputFile = "{$this->temp->getTmpFolder()}/$bucket.".KBC_CONFIGID.".csv";
+        $this->outputFile = "{$this->temp->getTmpFolder()}/$outputTable.csv";
         copy(__DIR__ . '/data.csv', $this->temp->getTmpFolder() . '/data1.csv');
     }
 

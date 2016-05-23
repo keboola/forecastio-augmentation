@@ -15,25 +15,23 @@ class UserStorage
     protected static $primaryKey = 'primary';
 
     protected $path;
-    protected $bucket;
+    protected $outputTable;
+    protected $file;
 
-    protected $files = [];
-
-    public function __construct($path, $bucket)
+    public function __construct($path, $outputTable)
     {
         $this->path = $path;
-        $this->bucket = $bucket;
+        $this->outputTable = $outputTable;
     }
 
-    public function save($table, $data)
+    public function save($data)
     {
-        if (!file_exists("$this->path/$this->bucket.$table.csv")) {
-            $file = new CsvFile("$this->path/$this->bucket.$table.csv");
-            $file->writeRow(self::$columns);
-            $this->files[$table] = $file;
+        if (!file_exists("$this->path/$this->outputTable.csv")) {
+            $this->file = new CsvFile("$this->path/$this->outputTable.csv");
+            $this->file->writeRow(self::$columns);
 
-            file_put_contents("$this->path/$this->bucket.$table.csv.manifest", Yaml::dump([
-                'destination' => "$this->bucket.$table",
+            file_put_contents("$this->path/$this->outputTable.csv.manifest", Yaml::dump([
+                'destination' => $this->outputTable,
                 'incremental' => true,
                 'primary_key' => self::$primaryKey
             ]));
@@ -47,8 +45,6 @@ class UserStorage
             $dataToSave[$c] = isset($data[$c]) ? $data[$c] : null;
         }
 
-        /** @var CsvFile $file */
-        $file = $this->files[$table];
-        $file->writeRow($dataToSave);
+        $this->file->writeRow($dataToSave);
     }
 }

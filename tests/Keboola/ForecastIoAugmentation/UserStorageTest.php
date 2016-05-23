@@ -17,10 +17,10 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
     {
         $temp = new \Keboola\Temp\Temp();
         $temp->initRunFolder();
-        $bucket = 'in.c-ag-forecastio';
+        $table = 'in.c-ag-forecastio.forecastio';
 
-        $userStorage = new UserStorage($temp->getTmpFolder(), $bucket);
-        $userStorage->save('forecastio', [
+        $userStorage = new UserStorage($temp->getTmpFolder(), $table);
+        $userStorage->save([
             'primary' => 'key',
             'latitude' => '10.5',
             'longitude' => '13.4',
@@ -29,8 +29,8 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
             'value' => '-12.5'
         ]);
 
-        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$bucket.forecastio.csv"));
-        if (($handle = fopen("{$temp->getTmpFolder()}/$bucket.forecastio.csv", "r")) !== false) {
+        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.csv"));
+        if (($handle = fopen("{$temp->getTmpFolder()}/$table.csv", "r")) !== false) {
             $row1 = fgetcsv($handle, 1000, ",");
             $this->assertEquals(["primary","latitude","longitude","date","key","value"], $row1);
             $row2 = fgetcsv($handle, 1000, ",");
@@ -40,10 +40,10 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
             $this->fail();
         }
 
-        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$bucket.forecastio.csv.manifest"));
-        $manifest = Yaml::parse(file_get_contents("{$temp->getTmpFolder()}/$bucket.forecastio.csv.manifest"));
+        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.csv.manifest"));
+        $manifest = Yaml::parse(file_get_contents("{$temp->getTmpFolder()}/$table.csv.manifest"));
         $this->assertArrayHasKey('destination', $manifest);
-        $this->assertEquals("$bucket.forecastio", $manifest['destination']);
+        $this->assertEquals($table, $manifest['destination']);
         $this->assertArrayHasKey('incremental', $manifest);
         $this->assertEquals(true, $manifest['incremental']);
         $this->assertArrayHasKey('primary_key', $manifest);

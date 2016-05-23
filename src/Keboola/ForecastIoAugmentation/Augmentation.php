@@ -24,13 +24,13 @@ class Augmentation
     /** @var CacheStorage  */
     protected $cacheStorage;
 
-    public function __construct($apiKey, array $dbParams, $folder, $bucket)
+    public function __construct($apiKey, array $dbParams, $folder, $outputTable)
     {
         $this->api = new \Forecast($apiKey, 10);
         $this->cacheStorage = new CacheStorage($dbParams);
         $this->actualTime = date('Y-m-d 12:00:00');
         
-        $this->userStorage = new UserStorage($folder, $bucket);
+        $this->userStorage = new UserStorage($folder, $outputTable);
     }
 
 
@@ -135,7 +135,7 @@ class Augmentation
                         }
                     }
 
-                    $this->userStorage->save(KBC_CONFIGID, [
+                    $this->userStorage->save([
                         'primary' => md5($q['lat'].':'.$q['lon'].':'.$q['time'].':'.$ld['key']),
                         'latitude' => $q['lat'],
                         'longitude' => $q['lon'],
