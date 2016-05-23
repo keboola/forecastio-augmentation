@@ -63,6 +63,18 @@ if (!isset($config['parameters']['outputTable'])) {
     exit(1);
 }
 
+if (!isset($config['storage']['output']['tables'][0]['destination'])) {
+    print "Destination table is not connected to output mapping";
+    exit(1);
+}
+
+if ($config['parameters']['outputTable'] != $config['storage']['output']['tables'][0]['destination']) {
+    print "Parameter 'outputTable' with value '{$config['parameters']['outputTable']}' does not correspond to table "
+        . "connected using output mapping: '{$config['storage']['output']['tables'][0]['destination']}' for table "
+        . "({$config['storage']['output']['tables'][0]['source']}) ";
+    exit(1);
+}
+
 if (!file_exists("{$arguments['data']}/out")) {
     mkdir("{$arguments['data']}/out");
 }
@@ -82,28 +94,28 @@ try {
             'user' => $config['image_parameters']['database']['#user'],
             'password' => $config['image_parameters']['database']['#password'],
         ],
-        "{$arguments['data']}/out/tables",
-        $config['parameters']['outputTable']
+        "{$arguments['data']}/out/tables/{$config['parameters']['outputTable']}",
+        $config['storage']['output']['tables'][0]['source']
     );
 
     foreach ($config['parameters']['inputTables'] as $row => $table) {
-        if (!isset($table['tableId'])) {
-            print("Missing 'tableId' key of parameter 'tables' on row $row");
+        if (!isset($table['filename'])) {
+            print("Missing 'filename' key of parameter 'inputTables' on row $row");
             exit(1);
         }
         if (!isset($table['latitude'])) {
-            print("Missing 'latitude' key of parameter 'tables' on row $row");
+            print("Missing 'latitude' key of parameter 'inputTables' on row $row");
             exit(1);
         }
         if (!isset($table['longitude'])) {
-            print("Missing 'longitude' key of parameter 'tables' on row $row");
+            print("Missing 'longitude' key of parameter 'inputTables' on row $row");
             exit(1);
         }
-        if (!file_exists("{$arguments['data']}/in/tables/{$table['tableId']}.csv")) {
-            print("Table '{$table['tableId']}' was not injected to the app");
+        if (!file_exists("{$arguments['data']}/in/tables/{$table['filename']}")) {
+            print("File '{$table['tableId']}' was not injected to the app");
             exit(1);
         }
-        $manifest = $config = Yaml::parse(file_get_contents("{$arguments['data']}/in/tables/{$table['tableId']}.csv.manifest"), true);
+        $manifest = $config = Yaml::parse(file_get_contents("{$arguments['data']}/in/tables/{$table['filename']}.manifest"), true);
 
         if (!in_array($table['latitude'], $manifest['columns'])) {
             print("Column with latitudes '{$table['latitude']}' is missing from table '{$table['tableId']}'");
@@ -123,7 +135,7 @@ try {
         }
 
         $app->process(
-            "{$arguments['data']}/in/tables/{$table['tableId']}.csv",
+            "{$arguments['data']}/in/tables/{$table['filename']}",
             $table['latitude'],
             $table['longitude'],
             isset($table['time']) ? $table['time'] : null,

@@ -19,7 +19,6 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
 
     public function testFunctional()
     {
-        $outputTable = 't' . uniqid();
         $dbParams = [
             'driver' => 'pdo_mysql',
             'host' => DB_HOST,
@@ -47,11 +46,29 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
                     '#password' => DB_PASSWORD
                 ],
             ],
+            'storage' => [
+                'input' => [
+                    'tables' => [
+                        [
+                            'source' => 'in.c-main.coordinates',
+                            'destination' => 'coordinates.csv'
+                        ]
+                    ]
+                ],
+                'output' => [
+                    'tables' => [
+                        [
+                            'source' => 'in.c-main.conditions',
+                            'destination' => 'conditions.csv'
+                        ]
+                    ]
+                ]
+            ],
             'parameters' => [
-                'outputTable' => $outputTable,
+                'outputTable' => 'conditions.csv',
                 'inputTables' => [
                     [
-                        'tableId' => 'out.c-main.coordinates',
+                        'filename' => 'coordinates.csv',
                         'latitude' => 'lat',
                         'longitude' => 'lon'
                     ]
@@ -61,8 +78,8 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
 
         mkdir($temp->getTmpFolder().'/in');
         mkdir($temp->getTmpFolder().'/in/tables');
-        copy(__DIR__ . '/data.csv', $temp->getTmpFolder().'/in/tables/out.c-main.coordinates.csv');
-        copy(__DIR__ . '/data.csv.manifest', $temp->getTmpFolder().'/in/tables/out.c-main.coordinates.csv.manifest');
+        copy(__DIR__ . '/data.csv', $temp->getTmpFolder().'/in/tables/coordinates.csv');
+        copy(__DIR__ . '/data.csv.manifest', $temp->getTmpFolder().'/in/tables/coordinates.csv.manifest');
 
         $process = new Process("php ".__DIR__."/../../../src/run.php --data=".$temp->getTmpFolder());
         $process->setTimeout(null);
@@ -71,6 +88,6 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
             $this->fail($process->getOutput().PHP_EOL.$process->getErrorOutput());
         }
 
-        $this->assertFileExists("{$temp->getTmpFolder()}/out/tables/$outputTable.csv");
+        $this->assertFileExists("{$temp->getTmpFolder()}/out/tables/conditions.csv");
     }
 }

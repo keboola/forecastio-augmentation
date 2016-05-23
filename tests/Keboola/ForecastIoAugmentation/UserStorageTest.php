@@ -19,7 +19,7 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
         $temp->initRunFolder();
         $table = 'in.c-ag-forecastio.forecastio';
 
-        $userStorage = new UserStorage($temp->getTmpFolder(), $table);
+        $userStorage = new UserStorage($temp->getTmpFolder()."/$table", $table);
         $userStorage->save([
             'primary' => 'key',
             'latitude' => '10.5',
@@ -29,8 +29,8 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
             'value' => '-12.5'
         ]);
 
-        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.csv"));
-        if (($handle = fopen("{$temp->getTmpFolder()}/$table.csv", "r")) !== false) {
+        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table"));
+        if (($handle = fopen("{$temp->getTmpFolder()}/$table", "r")) !== false) {
             $row1 = fgetcsv($handle, 1000, ",");
             $this->assertEquals(["primary","latitude","longitude","date","key","value"], $row1);
             $row2 = fgetcsv($handle, 1000, ",");
@@ -40,8 +40,8 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
             $this->fail();
         }
 
-        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.csv.manifest"));
-        $manifest = Yaml::parse(file_get_contents("{$temp->getTmpFolder()}/$table.csv.manifest"));
+        $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.manifest"));
+        $manifest = Yaml::parse(file_get_contents("{$temp->getTmpFolder()}/$table.manifest"));
         $this->assertArrayHasKey('destination', $manifest);
         $this->assertEquals($table, $manifest['destination']);
         $this->assertArrayHasKey('incremental', $manifest);

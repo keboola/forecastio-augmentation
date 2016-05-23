@@ -24,13 +24,13 @@ class Augmentation
     /** @var CacheStorage  */
     protected $cacheStorage;
 
-    public function __construct($apiKey, array $dbParams, $folder, $outputTable)
+    public function __construct($apiKey, array $dbParams, $outputFile, $destination)
     {
         $this->api = new \Forecast($apiKey, 10);
         $this->cacheStorage = new CacheStorage($dbParams);
         $this->actualTime = date('Y-m-d 12:00:00');
         
-        $this->userStorage = new UserStorage($folder, $outputTable);
+        $this->userStorage = new UserStorage($outputFile, $destination);
     }
 
 
@@ -49,7 +49,7 @@ class Augmentation
         $timeIndex = $time ? array_search($time, $header) : false;
         fclose($handle);
 
-        $this->prepareFile($dataFile, $latitudeIndex, $longitudeIndex, $timeIndex);
+        $dataFile = $this->prepareFile($dataFile, $latitudeIndex, $longitudeIndex, $timeIndex);
 
         $handle = fopen($dataFile, "r");
 
@@ -252,14 +252,12 @@ class Augmentation
         if ($timeIndex !== false) {
             $timeIndex++;
         }
-        $this->runCliCommand("mv $file $file.orig");
         $this->runCliCommand(
-            "cat {$file}.orig "
+            "cat {$file} "
             . "| cut -d, -f{$latIndex},{$lonIndex}" . ($timeIndex !== false ? ",$timeIndex" : null)
-            . "| sed -e \"1d\" | sort | uniq > $file"
+            . "| sed -e \"1d\" | sort | uniq > $file.copy"
         );
-        unlink("$file.orig");
-        return $file;
+        return "$file.copy";
     }
 
     protected function runCliCommand($command)

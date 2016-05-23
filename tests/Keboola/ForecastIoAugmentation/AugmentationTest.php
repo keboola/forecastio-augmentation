@@ -50,11 +50,11 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
         $this->app = new \Keboola\ForecastIoAugmentation\Augmentation(
             FORECASTIO_KEY,
             $dbParams,
-            $this->temp->getTmpFolder(),
+            $this->temp->getTmpFolder()."/$outputTable",
             $outputTable
         );
 
-        $this->outputFile = "{$this->temp->getTmpFolder()}/$outputTable.csv";
+        $this->outputFile = "{$this->temp->getTmpFolder()}/$outputTable";
         copy(__DIR__ . '/data.csv', $this->temp->getTmpFolder() . '/data1.csv');
     }
 

@@ -14,24 +14,24 @@ class UserStorage
     protected static $columns = ['primary', 'latitude', 'longitude', 'date', 'key', 'value'];
     protected static $primaryKey = 'primary';
 
-    protected $path;
-    protected $outputTable;
+    protected $outputFile;
+    protected $destination;
     protected $file;
 
-    public function __construct($path, $outputTable)
+    public function __construct($outputFile, $destination)
     {
-        $this->path = $path;
-        $this->outputTable = $outputTable;
+        $this->outputFile = $outputFile;
+        $this->destination = $destination;
     }
 
     public function save($data)
     {
-        if (!file_exists("$this->path/$this->outputTable.csv")) {
-            $this->file = new CsvFile("$this->path/$this->outputTable.csv");
+        if (!file_exists($this->outputFile)) {
+            $this->file = new CsvFile($this->outputFile);
             $this->file->writeRow(self::$columns);
 
-            file_put_contents("$this->path/$this->outputTable.csv.manifest", Yaml::dump([
-                'destination' => $this->outputTable,
+            file_put_contents("$this->outputFile.manifest", Yaml::dump([
+                'destination' => $this->destination,
                 'incremental' => true,
                 'primary_key' => self::$primaryKey
             ]));
