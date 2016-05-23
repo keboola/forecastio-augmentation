@@ -29,11 +29,6 @@ if (!isset($config['image_parameters']['#api_token'])) {
     exit(1);
 }
 
-if (!isset($config['image_parameters']['database']['driver'])) {
-    print("Missing image parameter 'database.driver'");
-    exit(1);
-}
-
 if (!isset($config['image_parameters']['database']['#host'])) {
     print("Missing image parameter 'database.#host'");
     exit(1);
@@ -88,7 +83,6 @@ try {
     $app = new \Keboola\ForecastIoAugmentation\Augmentation(
         $config['image_parameters']['#api_token'],
         [
-            'driver' => $config['image_parameters']['database']['driver'],
             'host' => $config['image_parameters']['database']['#host'],
             'dbname' => $config['image_parameters']['database']['#name'],
             'user' => $config['image_parameters']['database']['#user'],

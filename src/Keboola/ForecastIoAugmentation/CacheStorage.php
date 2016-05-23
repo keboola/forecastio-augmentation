@@ -21,6 +21,7 @@ class CacheStorage
 
     public function __construct($params)
     {
+        $params['driver'] = 'pdo_mysql';
         $this->db = DriverManager::getConnection($params);
     }
 
