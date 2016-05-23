@@ -27,7 +27,7 @@ class UserStorage
 
     public function save($table, $data)
     {
-        if (!isset($this->files[$table])) {
+        if (!file_exists("$this->path/$this->bucket.$table.csv")) {
             $file = new CsvFile("$this->path/$this->bucket.$table.csv");
             $file->writeRow(self::$columns);
             $this->files[$table] = $file;
@@ -50,16 +50,5 @@ class UserStorage
         /** @var CsvFile $file */
         $file = $this->files[$table];
         $file->writeRow($dataToSave);
-    }
-
-    public function createManifest($fileName, $table, array $primary = [])
-    {
-        if (!file_exists("$fileName.manifest")) {
-            file_put_contents("$fileName.manifest", Yaml::dump([
-                'destination' => "$this->bucket.$table",
-                'incremental' => true,
-                'primary_key' => $primary
-            ]));
-        }
     }
 }

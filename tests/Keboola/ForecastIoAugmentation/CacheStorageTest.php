@@ -7,26 +7,27 @@
 
 namespace Keboola\ForecastIoAugmentation\Tests;
 
-use Keboola\ForecastIoAugmentation\Service\CacheStorage;
+use Keboola\ForecastIoAugmentation\CacheStorage;
 
-class CacheStorageTest extends AbstractTest
+class CacheStorageTest extends \PHPUnit_Framework_TestCase
 {
 
     public function testCacheStorage()
     {
-        $db = \Doctrine\DBAL\DriverManager::getConnection(array(
+        $dbParams = [
             'driver' => 'pdo_mysql',
             'host' => DB_HOST,
             'dbname' => DB_NAME,
             'user' => DB_USER,
             'password' => DB_PASSWORD,
             'port' => DB_PORT
-        ));
-        $stmt = $db->prepare(file_get_contents(__DIR__ . '/../db.sql'));
+        ];
+        $db = \Doctrine\DBAL\DriverManager::getConnection($dbParams);
+        $stmt = $db->prepare(file_get_contents(__DIR__ . '/../../../db.sql'));
         $stmt->execute();
         $stmt->closeCursor();
 
-        $cacheStorage = new CacheStorage($db);
+        $cacheStorage = new CacheStorage($dbParams);
 
         $data = [
             [

@@ -70,6 +70,8 @@ if (!file_exists("{$arguments['data']}/out/tables")) {
     mkdir("{$arguments['data']}/out/tables");
 }
 
+defined('KBC_CONFIGID') || define('KBC_CONFIGID', getenv('KBC_CONFIGID') ? getenv('KBC_CONFIGID') : 'ag_forecastio');
+
 try {
     $app = new \Keboola\ForecastIoAugmentation\Augmentation(
         $config['image_parameters']['#api_token'],

@@ -15,9 +15,9 @@
     </php>
     <testsuites>
         <testsuite name="part-1">
-            <file>Tests/CacheStorageTest.php</file>
-            <file>Tests/UserStorageTest.php</file>
-            <file>Tests/FunctionalTest.php</file>
+            <file>tests/Keboola/ForecastioAugmentation/CacheStorageTest.php</file>
+            <file>tests/Keboola/ForecastioAugmentation/UserStorageTest.php</file>
+            <file>tests/Keboola/ForecastioAugmentation/AugmentationTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>

@@ -9,33 +9,15 @@
             "email": "jakub@keboola.com"
         }
     ],
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "CNG/ForecastTools",
-                "version": "1.0.0",
-                "source": {
-                    "url": "https://github.com/CNG/ForecastTools",
-                    "type": "git",
-                    "reference": "master"
-                },
-                "autoload": {
-                    "classmap": ["lib"]
-                }
-            }
-
-        }
-    ],
     "require": {
         "keboola/csv": "~1.1.3",
         "symfony/process": "~3.0.1",
         "doctrine/dbal": "v2.5.4",
-        "symfony/yaml": "~2.6.3",
-        "CNG/ForecastTools": "1.0.*"
+        "symfony/yaml": "~2.6.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^5",
+        "keboola/php-temp": "0.1.3",
         "phpunit/php-code-coverage": "^3",
         "squizlabs/php_codesniffer": "~2.5",
         "codeclimate/php-test-reporter": "dev-master"
@@ -44,6 +26,7 @@
     "autoload": {
         "psr-4": {
             "Keboola\\": "src/Keboola/"
-        }
+        },
+        "classmap": ["src/CNG/ForecastTools/lib"]
     }
 }

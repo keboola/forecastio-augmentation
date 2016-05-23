@@ -42,14 +42,20 @@ class Augmentation
         array $conditions = [],
         $units = self::TEMPERATURE_UNITS_SI
     ) {
-        $this->deduplicateFile($dataFile);
-
         $handle = fopen($dataFile, "r");
-
         $header = fgetcsv($handle);
         $latitudeIndex = array_search($latitude, $header);
         $longitudeIndex = array_search($longitude, $header);
         $timeIndex = $time ? array_search($time, $header) : false;
+        fclose($handle);
+
+        $this->prepareFile($dataFile, $latitudeIndex, $longitudeIndex, $timeIndex);
+
+        $handle = fopen($dataFile, "r");
+
+        $latitudeIndex = 0;
+        $longitudeIndex = 1;
+        $timeIndex = $time ? 2 : false;
 
         // query for each 50 lines from the file
         $countInBatch = 50;
@@ -105,31 +111,31 @@ class Augmentation
                             case 'temperatureMax':
                             case 'apparentTemperature':
                             case 'dewPoint':
-                                // From Fahrenheit To Celsius
+                                // From Fahrenheit to Celsius
                                 $ld['value'] = ($ld['value'] * (9 / 5)) + 32;
                                 break;
                             case 'precipAccumulation':
-                                // From centimeters To inches
+                                // From centimeters to inches
                                 $ld['value'] = $ld['value'] * 0.393701;
                                 break;
                             case 'nearestStormDistance':
                             case 'visibility':
-                                // From kilometers To miles
+                                // From kilometers to miles
                                 $ld['value'] = $ld['value'] * 0.621371;
                                 break;
                             case 'precipIntensity':
                             case 'precipIntensityMax':
-                                // From millimeters per hour To inches per hour
+                                // From millimeters per hour to inches per hour
                                 $ld['value'] = $ld['value'] * 0.03937;
                                 break;
                             case 'windSpeed':
-                                // From meters per second To miles per hour
+                                // From meters per second to miles per hour
                                 $ld['value'] = $ld['value'] * 2.2369362920544025;
                                 break;
                         }
                     }
 
-                    $this->userStorage->save([
+                    $this->userStorage->save(KBC_CONFIGID, [
                         'primary' => md5($q['lat'].':'.$q['lon'].':'.$q['time'].':'.$ld['key']),
                         'latitude' => $q['lat'],
                         'longitude' => $q['lon'],
@@ -139,22 +145,9 @@ class Augmentation
                     ]);
                 }
             } else {
-                $this->eventLogger->log(
-                    sprintf("Conditions for coordinate '%s %s' not found", $q['lat'], $q['lon']),
-                    [],
-                    null,
-                    EventLogger::TYPE_WARN
-                );
+                error_log("Conditions for coordinate '{$q['lat']} {$q['lon']}' not found");
             }
         }
-
-        $this->cacheStorage->logApiCallsCount(
-            $this->job->getProject()['id'],
-            $this->job->getProject()['name'],
-            $this->job->getToken()['id'],
-            $this->job->getToken()['description'],
-            $this->apiCallsCount
-        );
     }
 
     /**
@@ -248,23 +241,34 @@ class Augmentation
         }
     }
 
-    protected function deduplicateFile($file)
+    /**
+     * Command removes all columns except lat, lon and time, removes header and deduplicates rows
+     */
+    protected function prepareFile($file, $latIndex, $lonIndex, $timeIndex = false)
     {
-        $process = new Process("mv $file $file.orig");
+        // cut indexes columns from 1
+        $latIndex++;
+        $lonIndex++;
+        if ($timeIndex !== false) {
+            $timeIndex++;
+        }
+        $this->runCliCommand("mv $file $file.orig");
+        $this->runCliCommand(
+            "cat {$file}.orig "
+            . "| cut -d, -f{$latIndex},{$lonIndex}" . ($timeIndex !== false ? ",$timeIndex" : null)
+            . "| sed -e \"1d\" | sort | uniq > $file"
+        );
+        unlink("$file.orig");
+        return $file;
+    }
+
+    protected function runCliCommand($command)
+    {
+        $process = new Process($command);
         $process->setTimeout(null);
         $process->run();
-
-        $process = new Process("sed -e \"1d\" $file.org | sort | uniq > $file");
-        $process->setTimeout(null);
-        $process->run();
-        $error = $process->getErrorOutput();
-
-        unlink($file);
-
-        if ($process->isSuccessful() && !$error && file_exists($file)) {
-            return $file;
-        } else {
-            print("File $file deduplication failed: $error");
+        if (!$process->isSuccessful()) {
+            print("Preparation of csv file failed with command '$command' on: " . $process->getErrorOutput());
             exit(1);
         }
     }

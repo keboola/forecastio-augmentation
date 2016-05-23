@@ -5,8 +5,6 @@
  * @author Jakub Matejka <jakub@keboola.com>
  */
 
-defined('STORAGE_API_URL') || define('STORAGE_API_URL', getenv('STORAGE_API_URL') ? getenv('STORAGE_API_URL') : 'https://connection.keboola.com');
-defined('STORAGE_API_TOKEN') || define('STORAGE_API_TOKEN', getenv('STORAGE_API_TOKEN') ? getenv('STORAGE_API_TOKEN') : 'sapi_token');
 defined('FORECASTIO_KEY') || define('FORECASTIO_KEY', getenv('FORECASTIO_KEY') ? getenv('FORECASTIO_KEY') : 'forecastio_api_key');
 defined('DB_HOST') || define('DB_HOST', getenv('DB_HOST') ? getenv('DB_HOST') : '127.0.0.1');
 defined('DB_NAME') || define('DB_NAME', getenv('DB_NAME') ? getenv('DB_NAME') : 'ag_forecastio');
