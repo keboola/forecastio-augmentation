@@ -10,15 +10,7 @@ namespace Keboola\ForecastIoAugmentation\Tests;
 use Doctrine\DBAL\Connection;
 use Keboola\Csv\CsvFile;
 use Keboola\ForecastIoAugmentation\Augmentation;
-use Keboola\ForecastIoAugmentation\JobExecutor;
-use Keboola\ForecastIoAugmentation\Service\ConfigurationStorage;
-use Keboola\ForecastIoAugmentation\Service\CacheStorage;
-use Keboola\ForecastIoAugmentation\Service\UserStorage;
-use Keboola\StorageApi\Table;
-use Keboola\StorageApi\Client as StorageApiClient;
 use Keboola\Temp\Temp;
-use Monolog\Handler\NullHandler;
-use Keboola\Syrup\Job\Metadata\Job;
 
 class AugmentationTest extends \PHPUnit_Framework_TestCase
 {

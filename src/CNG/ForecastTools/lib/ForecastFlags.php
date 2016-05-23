@@ -41,7 +41,7 @@ class ForecastFlags
   public function getDarkskyUnavailable()
   {
     $field = 'darksky-unavailable';
-    return property_exists($this->_flags->$field);
+    return isset($this->_flags->$field)? $this->_flags->$field : null;
   }
 
   /**
@@ -115,7 +115,7 @@ class ForecastFlags
   public function getMetnoLicense()
   {
     $field = 'metno-license';
-    return property_exists($this->_flags->$field);
+    return isset($this->_flags->$field)? $this->_flags->$field : null;
   }
 
   /**
