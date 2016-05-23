@@ -22,6 +22,7 @@ ratings:
   - "**.php"
 exclude_paths:
 - .git/**
+- src/run.php
 - src/CNG/**
 - tests/**
 - vendor/**

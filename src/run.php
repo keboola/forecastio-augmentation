@@ -103,7 +103,7 @@ try {
             print("Table '{$table['tableId']}' was not injected to the app");
             exit(1);
         }
-        $manifest = json_decode(file_get_contents("{$arguments['data']}/in/tables/{$table['tableId']}.csv.manifest"), true);
+        $manifest = $config = Yaml::parse(file_get_contents("{$arguments['data']}/in/tables/{$table['tableId']}.csv.manifest"), true);
 
         if (!in_array($table['latitude'], $manifest['columns'])) {
             print("Column with latitudes '{$table['latitude']}' is missing from table '{$table['tableId']}'");
