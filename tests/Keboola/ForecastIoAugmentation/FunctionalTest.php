@@ -58,8 +58,8 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
                 'output' => [
                     'tables' => [
                         [
-                            'source' => 'in.c-main.conditions',
-                            'destination' => 'conditions.csv'
+                            'destination' => 'in.c-main.conditions',
+                            'source' => 'conditions.csv'
                         ]
                     ]
                 ]

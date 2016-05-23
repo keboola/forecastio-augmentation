@@ -68,10 +68,10 @@ if (!isset($config['storage']['output']['tables'][0]['destination'])) {
     exit(1);
 }
 
-if ($config['parameters']['outputTable'] != $config['storage']['output']['tables'][0]['destination']) {
+if ($config['parameters']['outputTable'] != $config['storage']['output']['tables'][0]['source']) {
     print "Parameter 'outputTable' with value '{$config['parameters']['outputTable']}' does not correspond to table "
-        . "connected using output mapping: '{$config['storage']['output']['tables'][0]['destination']}' for table "
-        . "({$config['storage']['output']['tables'][0]['source']}) ";
+        . "connected using output mapping: '{$config['storage']['output']['tables'][0]['source']}' for table "
+        . "({$config['storage']['output']['tables'][0]['destination']}) ";
     exit(1);
 }
 
@@ -95,7 +95,7 @@ try {
             'password' => $config['image_parameters']['database']['#password'],
         ],
         "{$arguments['data']}/out/tables/{$config['parameters']['outputTable']}",
-        $config['storage']['output']['tables'][0]['source']
+        $config['storage']['output']['tables'][0]['destination']
     );
 
     foreach ($config['parameters']['inputTables'] as $row => $table) {
