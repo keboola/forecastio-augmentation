@@ -24,62 +24,16 @@ if (!isset($arguments['data'])) {
 }
 $config = Yaml::parse(file_get_contents("{$arguments['data']}/config.yml"));
 
-if (!isset($config['image_parameters']['#api_token'])) {
-    print("Missing image parameter '#api_token'");
-    exit(1);
-}
-
-if (!isset($config['image_parameters']['database']['#host'])) {
-    print("Missing image parameter 'database.#host'");
-    exit(1);
-}
-
-if (!isset($config['image_parameters']['database']['#name'])) {
-    print("Missing image parameter 'database.#name'");
-    exit(1);
-}
-
-if (!isset($config['image_parameters']['database']['#user'])) {
-    print("Missing image parameter 'database.#user'");
-    exit(1);
-}
-
-if (!isset($config['image_parameters']['database']['#password'])) {
-    print("Missing image parameter 'database.#password'");
-    exit(1);
-}
-
-if (!isset($config['parameters']['inputTables'])) {
-    print("Missing parameter 'inputTables'");
-    exit(1);
-}
-if (!isset($config['parameters']['outputTable'])) {
-    print "Missing parameter outputTable";
-    exit(1);
-}
-
-if (!isset($config['storage']['output']['tables'][0]['destination'])) {
-    print "Destination table is not connected to output mapping";
-    exit(1);
-}
-
-if ($config['parameters']['outputTable'] != $config['storage']['output']['tables'][0]['source']) {
-    print "Parameter 'outputTable' with value '{$config['parameters']['outputTable']}' does not correspond to table "
-        . "connected using output mapping: '{$config['storage']['output']['tables'][0]['source']}' for table "
-        . "({$config['storage']['output']['tables'][0]['destination']}) ";
-    exit(1);
-}
-
-if (!file_exists("{$arguments['data']}/out")) {
-    mkdir("{$arguments['data']}/out");
-}
-if (!file_exists("{$arguments['data']}/out/tables")) {
-    mkdir("{$arguments['data']}/out/tables");
-}
-
-defined('KBC_CONFIGID') || define('KBC_CONFIGID', getenv('KBC_CONFIGID') ? getenv('KBC_CONFIGID') : 'ag_forecastio');
-
 try {
+    \Keboola\ForecastIoAugmentation\ParametersValidation::validate($config);
+
+    if (!file_exists("{$arguments['data']}/out")) {
+        mkdir("{$arguments['data']}/out");
+    }
+    if (!file_exists("{$arguments['data']}/out/tables")) {
+        mkdir("{$arguments['data']}/out/tables");
+    }
+    
     $app = new \Keboola\ForecastIoAugmentation\Augmentation(
         $config['image_parameters']['#api_token'],
         [
@@ -93,40 +47,15 @@ try {
     );
 
     foreach ($config['parameters']['inputTables'] as $row => $table) {
-        if (!isset($table['filename'])) {
-            print("Missing 'filename' key of parameter 'inputTables' on row $row");
-            exit(1);
-        }
-        if (!isset($table['latitude'])) {
-            print("Missing 'latitude' key of parameter 'inputTables' on row $row");
-            exit(1);
-        }
-        if (!isset($table['longitude'])) {
-            print("Missing 'longitude' key of parameter 'inputTables' on row $row");
-            exit(1);
-        }
+        \Keboola\ForecastIoAugmentation\ParametersValidation::validateTable($table);
+
         if (!file_exists("{$arguments['data']}/in/tables/{$table['filename']}")) {
             print("File '{$table['tableId']}' was not injected to the app");
             exit(1);
         }
         $manifest = $config = Yaml::parse(file_get_contents("{$arguments['data']}/in/tables/{$table['filename']}.manifest"), true);
 
-        if (!in_array($table['latitude'], $manifest['columns'])) {
-            print("Column with latitudes '{$table['latitude']}' is missing from table '{$table['tableId']}'");
-            exit(1);
-        }
-        if (!in_array($table['longitude'], $manifest['columns'])) {
-            print("Column with longitudes '{$table['longitude']}' is missing from table '{$table['tableId']}'");
-            exit(1);
-        }
-        if (!empty($table['time']) && !in_array($table['time'], $manifest['columns'])) {
-            print("Column with times '{$table['time']}' is missing from table '{$table['tableId']}'");
-            exit(1);
-        }
-        if (isset($config['parameters']['conditions']) && !is_array(isset($config['parameters']['conditions']))) {
-            print("Parameter 'conditions' must be array");
-            exit(1);
-        }
+        \Keboola\ForecastIoAugmentation\ParametersValidation::validateTableManifest($table, $manifest);
 
         $app->process(
             "{$arguments['data']}/in/tables/{$table['filename']}",

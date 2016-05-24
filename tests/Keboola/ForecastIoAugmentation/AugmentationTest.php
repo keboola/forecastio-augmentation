@@ -22,12 +22,6 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
     protected $app;
     protected $outputFile;
 
-    public static function setUpBeforeClass()
-    {
-        parent::setUpBeforeClass();
-        define('KBC_CONFIGID', uniqid());
-    }
-
     public function setUp()
     {
         $outputTable = 't' . uniqid();
