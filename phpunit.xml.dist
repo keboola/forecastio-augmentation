@@ -14,11 +14,21 @@
         <ini name="display_errors" value="true"/>
     </php>
     <testsuites>
-        <testsuite name="part-1">
-            <file>tests/Keboola/ForecastioAugmentation/CacheStorageTest.php</file>
+        <testsuite name="all">
             <file>tests/Keboola/ForecastioAugmentation/UserStorageTest.php</file>
             <file>tests/Keboola/ForecastioAugmentation/AugmentationTest.php</file>
             <file>tests/Keboola/ForecastioAugmentation/FunctionalTest.php</file>
         </testsuite>
     </testsuites>
+    <filter>
+        <whitelist>
+            <directory suffix=".php">src</directory>
+        </whitelist>
+        <blacklist>
+            <file>src/run.php</file>
+            <directory>build</directory>
+            <directory>tests</directory>
+            <directory>vendor</directory>
+        </blacklist>
+    </filter>
 </phpunit>

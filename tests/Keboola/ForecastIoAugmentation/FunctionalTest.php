@@ -7,9 +7,6 @@
 
 namespace Keboola\ForecastIoAugmentation\Tests;
 
-use Doctrine\DBAL\Connection;
-use Keboola\Csv\CsvFile;
-use Keboola\ForecastIoAugmentation\Augmentation;
 use Keboola\Temp\Temp;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
@@ -19,32 +16,12 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
 
     public function testFunctional()
     {
-        $dbParams = [
-            'driver' => 'pdo_mysql',
-            'host' => DB_HOST,
-            'dbname' => DB_NAME,
-            'user' => DB_USER,
-            'password' => DB_PASSWORD,
-        ];
-
         $temp = new Temp();
         $temp->initRunFolder();
 
-        $db = \Doctrine\DBAL\DriverManager::getConnection($dbParams);
-        $stmt = $db->prepare(file_get_contents(__DIR__ . '/../../../db.sql'));
-        $stmt->execute();
-        $stmt->closeCursor();
-
         file_put_contents($temp->getTmpFolder() . '/config.yml', Yaml::dump([
             'image_parameters' => [
-                '#api_token' => FORECASTIO_KEY,
-                'database' => [
-                    'driver' => 'pdo_mysql',
-                    '#host' => DB_HOST,
-                    '#name' => DB_NAME,
-                    '#user' => DB_USER,
-                    '#password' => DB_PASSWORD
-                ],
+                '#api_token' => FORECASTIO_KEY
             ],
             'storage' => [
                 'input' => [
@@ -58,21 +35,14 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
                 'output' => [
                     'tables' => [
                         [
-                            'destination' => 'in.c-main.conditions',
-                            'source' => 'conditions.csv'
+                            'source' => 'conditions.csv',
+                            'destination' => 'in.c-main.conditions'
                         ]
                     ]
                 ]
             ],
             'parameters' => [
-                'outputTable' => 'conditions.csv',
-                'inputTables' => [
-                    [
-                        'filename' => 'coordinates.csv',
-                        'latitude' => 'lat',
-                        'longitude' => 'lon'
-                    ]
-                ]
+                'conditions' => ['windSpeed']
             ]
         ]));
 

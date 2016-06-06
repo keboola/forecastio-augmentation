@@ -12,7 +12,7 @@ use Symfony\Component\Yaml\Yaml;
 class UserStorage
 {
     protected static $columns = ['primary', 'latitude', 'longitude', 'date', 'key', 'value'];
-    protected static $primaryKey = 'primary';
+    protected static $primaryKey = ['primary'];
 
     protected $outputFile;
     protected $destination;
@@ -26,7 +26,7 @@ class UserStorage
 
     public function save($data)
     {
-        if (!file_exists($this->outputFile)) {
+        if (!$this->file) {
             $this->file = new CsvFile($this->outputFile);
             $this->file->writeRow(self::$columns);
 

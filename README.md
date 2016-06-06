@@ -13,17 +13,9 @@ You can get daily or hourly conditions from the API.
 
 [![Build Status](https://travis-ci.org/keboola/forecastio-augmentation.svg)](https://travis-ci.org/keboola/forecastio-augmentation) [![Code Climate](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/gpa.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation) [![Test Coverage](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/coverage.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation/coverage)
 
-## Caching
-
-The application is caching all requests to it's own database and 
-performs rounding of coordinates and time to prevent senseless queries 
-to Forecast.io API. **Coordinates are rounded to one decimal place** 
-(so you get the same results for coordinates 50.094146,14.456888 
-and 50.091309,14.460015) and **time is rounded to whole hours** (so you 
-get the same results for dates 2015-06-22 14:05:12 and 2015-06-22 14:28:58).
-
-
 # Source data
+- source tables must contain exactly two columns with latitudes and longitudes or three columns if you want to specify date/time too
+- you should deduplicate your data to avoid useless exhausting of your credit quota
 - latitudes and longitudes have to be decimal degrees
 - date values must have format `yyyy-mm-dd` (e.g. 2015-06-22) to get daily data or `yyyy-mm-dd HH:ii:ss` (e.g. 2015-06-22 14:00:00) to get hourly data
 
@@ -44,15 +36,6 @@ Example:
 ```
 {
     "parameters": {
-        "outputTable": "in.c-forecastio.conditions",
-        "inputTables": [
-            [
-                "tableId": "in.c-customers.addresses",
-                "latitude": "columnWithLatitudes",
-                "longitude": "columnWithLongitudes",
-                "time": "dateColumn"
-            ]
-        ],
         "conditions": [
             "temperature",
             "pressure",

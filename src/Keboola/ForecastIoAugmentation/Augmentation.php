@@ -21,14 +21,10 @@ class Augmentation
     /** @var \Forecast */
     protected $api;
 
-    /** @var CacheStorage  */
-    protected $cacheStorage;
-
-    public function __construct($apiKey, array $dbParams, $outputFile, $destination)
+    public function __construct($apiKey, $outputFile, $destination)
     {
         $this->api = new \Forecast($apiKey, 10);
-        $this->cacheStorage = new CacheStorage($dbParams);
-        $this->actualTime = date('Y-m-d 12:00:00');
+        $this->actualTime = date('Y-m-d\TH:i:s');
         
         $this->userStorage = new UserStorage($outputFile, $destination);
     }
@@ -36,41 +32,28 @@ class Augmentation
 
     public function process(
         $dataFile,
-        $latitude,
-        $longitude,
-        $time = null,
         array $conditions = [],
         $units = self::TEMPERATURE_UNITS_SI
     ) {
-        $handle = fopen($dataFile, "r");
-        $header = fgetcsv($handle);
-        $latitudeIndex = array_search($latitude, $header);
-        $longitudeIndex = array_search($longitude, $header);
-        $timeIndex = $time ? array_search($time, $header) : false;
-        fclose($handle);
-
-        $dataFile = $this->prepareFile($dataFile, $latitudeIndex, $longitudeIndex, $timeIndex);
-
-        $handle = fopen($dataFile, "r");
-
-        $latitudeIndex = 0;
-        $longitudeIndex = 1;
-        $timeIndex = $time ? 2 : false;
+        $csvFile = new \Keboola\Csv\CsvFile($dataFile);
 
         // query for each 50 lines from the file
         $countInBatch = 50;
         $queries = [];
-        while (($line = fgetcsv($handle)) !== false) {
-            $queries[] = [
-                'lat' => $line[$latitudeIndex],
-                'lon' => $line[$longitudeIndex],
-                'time' => $timeIndex !== false ? $line[$timeIndex] : null,
-                'daily' => false
-            ];
+        foreach ($csvFile as $row => $line) {
+            if ($row == 0) {
+                continue;
+            }
+            try {
+                $queries[] = $this->buildQuery($line, $units);
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+                continue;
+            }
 
             // Run for every 50 lines
             if (count($queries) >= $countInBatch) {
-                $this->processBatch($queries, $conditions, $units);
+                $this->processBatch($queries, $conditions);
 
                 $queries = [];
             }
@@ -78,74 +61,55 @@ class Augmentation
 
         if (count($queries)) {
             // run the rest of lines above the highest multiple of 50
-            $this->processBatch($queries, $conditions, $units);
+            $this->processBatch($queries, $conditions);
         }
-        fclose($handle);
     }
 
-    public function processBatch($queries, array $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
+    public function processBatch($queries, array $conditions = [])
     {
-        $queries = $this->validateQueries($queries);
-
-        $queriesByKey = [];
-        foreach ($queries as $q) {
-            $cacheKey = CacheStorage::getCacheKey($q['lat'], $q['lon'], $q['time'], $q['daily']);
-            $queriesByKey[$cacheKey] = $q;
-        }
-
-        $this->getMissingDataFromApi($queriesByKey);
-        
-
-        // Get data from cache
-        $data = $this->cacheStorage->get(array_keys($queriesByKey), $conditions);
-
-        foreach ($queries as $q) {
-            $cacheKey = CacheStorage::getCacheKey($q['lat'], $q['lon'], $q['time'], $q['daily']);
-            if (isset($data[$cacheKey])) {
-                $locationData = $data[$cacheKey];
-                foreach ($locationData as $ld) {
-                    if ($units == self::TEMPERATURE_UNITS_US) {
-                        switch ($ld['key']) {
-                            case 'temperature':
-                            case 'temperatureMin':
-                            case 'temperatureMax':
-                            case 'apparentTemperature':
-                            case 'dewPoint':
-                                // From Fahrenheit to Celsius
-                                $ld['value'] = ($ld['value'] * (9 / 5)) + 32;
-                                break;
-                            case 'precipAccumulation':
-                                // From centimeters to inches
-                                $ld['value'] = $ld['value'] * 0.393701;
-                                break;
-                            case 'nearestStormDistance':
-                            case 'visibility':
-                                // From kilometers to miles
-                                $ld['value'] = $ld['value'] * 0.621371;
-                                break;
-                            case 'precipIntensity':
-                            case 'precipIntensityMax':
-                                // From millimeters per hour to inches per hour
-                                $ld['value'] = $ld['value'] * 0.03937;
-                                break;
-                            case 'windSpeed':
-                                // From meters per second to miles per hour
-                                $ld['value'] = $ld['value'] * 2.2369362920544025;
-                                break;
-                        }
-                    }
-
-                    $this->userStorage->save([
-                        'primary' => md5($q['lat'].':'.$q['lon'].':'.$q['time'].':'.$ld['key']),
-                        'latitude' => $q['lat'],
-                        'longitude' => $q['lon'],
-                        'date' => $q['time'],
-                        'key' => $ld['key'],
-                        'value' => $ld['value']
-                    ]);
-                }
+        foreach ($this->api->getData($queries) as $r) {
+            /** @var \ForecastResponse $r */
+            $data = (array)$r->getRawData();
+            if (isset($data['error'])) {
+                error_log("Getting conditions for {$data['coords']} on {$data['time']} failed: {$data['error']}");
             } else {
-                error_log("Conditions for coordinate '{$q['lat']} {$q['lon']}' not found");
+                if (isset($data['daily']->data[0])) {
+                    $dailyData = (array)$data['daily']->data[0];
+                    $this->saveData(
+                        $data['latitude'],
+                        $data['longitude'],
+                        date('Y-m-d', $dailyData['time']),
+                        $dailyData,
+                        $conditions
+                    );
+                }
+                if (isset($data['currently'])) {
+                    $currentlyData = (array)$data['currently'];
+                    $this->saveData(
+                        $data['latitude'],
+                        $data['longitude'],
+                        date('Y-m-d H:i:s', $currentlyData['time']),
+                        $currentlyData,
+                        $conditions
+                    );
+                }
+            }
+        }
+    }
+
+    protected function saveData($latitude, $longitude, $time, $data, $conditions)
+    {
+        unset($data['time']);
+        foreach ($data as $key => $value) {
+            if (in_array($key, $conditions) || !count($conditions)) {
+                $this->userStorage->save([
+                    'primary' => md5("{$latitude}:{$longitude}:{$time}:{$key}"),
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'date' => $time,
+                    'key' => $key,
+                    'value' => $value
+                ]);
             }
         }
     }
@@ -153,121 +117,39 @@ class Augmentation
     /**
      * Basically analyze validity of coordinates and date
      */
-    protected function validateQueries(array $queries)
+    protected function buildQuery($q, $units)
     {
-        foreach ($queries as $i => &$q) {
-            if ($q['lat'] === null || $q['lon'] === null || (!$q['lat'] && !$q['lon'])
-                || !is_numeric($q['lat']) || !is_numeric($q['lon'])) {
-                error_log("Value '{$q['lat']} {$q['lon']}' is not valid coordinate");
-                unset($queries[$i]);
-                continue;
-            }
-            if (!isset($q['time'])) {
-                $q['time'] = $this->actualTime;
+        if ($q[0] === null || $q[1] === null || (!$q[0] && !$q[1]) || !is_numeric($q[0]) || !is_numeric($q[1])) {
+            throw new Exception("Value '{$q[0]} {$q[1]}' is not valid coordinate");
+        }
+
+        $result = [
+            'latitude' => $q[0],
+            'longitude' => $q[1],
+            'units' => $units
+        ];
+
+        if (!empty($q[2])) {
+            if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $q[2])) {
+                if (substr($q[2], 0, 10) > date('Y-m-d')) {
+                    throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' lies in future");
+                }
+                $result['time'] = str_replace(' ', 'T', $q[2]);
+                $result['exclude'] = 'minutely,daily,alerts,flags';
+            } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $q[2])) {
+                if ($q[2] > date('Y-m-d')) {
+                    throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' lies in future");
+                }
+                $result['time'] = "{$q[2]}T12:00:00";
+                $result['exclude'] = 'currently,minutely,alerts,flags';
             } else {
-                if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $q['time'])) {
-                    if (substr($q['time'], 0, 10) > date('Y-m-d')) {
-                        error_log("Date '{$q['time']}' for coordinate '{$q['lat']} {$q['lon']}' lies in future");
-                        unset($queries[$i]);
-                    }
-                } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $q['time'])) {
-                    $q['daily'] = true;
-                    if ($q['time'] > date('Y-m-d')) {
-                        error_log("Date '{$q['time']}' for coordinate '{$q['lat']} {$q['lon']}' lies in future");
-                        unset($queries[$i]);
-                    }
-                } else {
-                    error_log("Date value '{$q['time']}' for coordinate '{$q['lat']} {$q['lon']}' is not valid");
-                    unset($queries[$i]);
-                }
+                throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' is not valid");
             }
-        }
-        return array_values($queries);
-    }
-    
-    protected function getMissingDataFromApi(array $queriesByKey)
-    {
-        $missingKeys = $this->cacheStorage->getMissingKeys(array_keys($queriesByKey));
-
-        $paramsForApi = [];
-        foreach ($missingKeys as $key) {
-            $q = $queriesByKey[$key];
-            $paramsForApi[$key] = [
-                'latitude' => CacheStorage::roundCoordinate($q['lat']),
-                'longitude' => CacheStorage::roundCoordinate($q['lon']),
-                'time' => $q['daily'] ? $q['time'].'T12:00:00' : str_replace(' ', 'T', $q['time']),
-                'units' => 'si',
-                'exclude' => 'currently,minutely,alerts,flags'
-            ];
+        } else {
+            $result['time'] = $this->actualTime;
+            $result['exclude'] = 'minutely,daily,alerts,flags';
         }
 
-        if (count($paramsForApi)) {
-            foreach ($this->api->getData($paramsForApi) as $r) {
-                /** @var \ForecastResponse $r */
-                $data = (array)$r->getRawData();
-                if (isset($data['error'])) {
-                    error_log("Getting conditions for {$data['coords']} on {$data['time']} failed: {$data['error']}");
-                } else {
-                    $dataToSave = [];
-                    if (isset($data['daily']->data[0])) {
-                        $dailyData = (array)$data['daily']->data[0];
-                        $time = date('Y-m-d H:i:s', $dailyData['time']);
-                        unset($dailyData['time']);
-                        foreach ($dailyData as $k => $v) {
-                            $dataToSave[] = [
-                                'location' => CacheStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time, true),
-                                'key' => $k,
-                                'value' => $v
-                            ];
-                        }
-                    }
-                    if (isset($data['hourly']->data)) {
-                        foreach ($data['hourly']->data as $hourlyData) {
-                            $hourlyData = (array)$hourlyData;
-                            $time = date('Y-m-d H:i:s', $hourlyData['time']);
-                            unset($hourlyData['time']);
-                            foreach ($hourlyData as $k => $v) {
-                                $dataToSave[] = [
-                                    'location' => CacheStorage::getCacheKey($r->getLatitude(), $r->getLongitude(), $time, false),
-                                    'key' => $k,
-                                    'value' => $v
-                                ];
-                            }
-                        }
-                    }
-                    $this->cacheStorage->saveBulk($dataToSave);
-                }
-            }
-        }
-    }
-
-    /**
-     * Command removes all columns except lat, lon and time, removes header and deduplicates rows
-     */
-    protected function prepareFile($file, $latIndex, $lonIndex, $timeIndex = false)
-    {
-        // cut indexes columns from 1
-        $latIndex++;
-        $lonIndex++;
-        if ($timeIndex !== false) {
-            $timeIndex++;
-        }
-        $this->runCliCommand(
-            "cat {$file} "
-            . "| cut -d, -f{$latIndex},{$lonIndex}" . ($timeIndex !== false ? ",$timeIndex" : null)
-            . "| sed -e \"1d\" | sort | uniq > $file.copy"
-        );
-        return "$file.copy";
-    }
-
-    protected function runCliCommand($command)
-    {
-        $process = new Process($command);
-        $process->setTimeout(null);
-        $process->run();
-        if (!$process->isSuccessful()) {
-            print("Preparation of csv file failed with command '$command' on: " . $process->getErrorOutput());
-            exit(1);
-        }
+        return $result;
     }
 }
