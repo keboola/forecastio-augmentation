@@ -1,8 +1,11 @@
-FROM keboola/base-php70
+FROM php:7.0
 MAINTAINER Jakub Matejka <jakub@keboola.com>
+
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN composer self-update
+RUN apt-get update && apt-get install unzip git -y
+RUN cd && curl -sS https://getcomposer.org/installer | php && ln -s /root/composer.phar /usr/local/bin/composer
+RUN pecl install xdebug && docker-php-ext-enable xdebug
 
 ADD . /code
 
