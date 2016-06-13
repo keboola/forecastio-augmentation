@@ -10,16 +10,13 @@
          stopOnFailure="true"
          syntaxCheck="false"
          bootstrap="tests/bootstrap.php">
-    <php>
-        <ini name="display_errors" value="true"/>
-    </php>
-    <testsuites>
-        <testsuite name="all">
-            <file>tests/Keboola/ForecastIoAugmentation/UserStorageTest.php</file>
-            <file>tests/Keboola/ForecastIoAugmentation/AugmentationTest.php</file>
-            <file>tests/Keboola/ForecastIoAugmentation/FunctionalTest.php</file>
-        </testsuite>
-    </testsuites>
+
+    <testsuite name="main">
+        <file>tests/Keboola/ForecastIoAugmentation/UserStorageTest.php</file>
+        <file>tests/Keboola/ForecastIoAugmentation/AugmentationTest.php</file>
+        <file>tests/Keboola/ForecastIoAugmentation/FunctionalTest.php</file>
+    </testsuite>
+
     <filter>
         <whitelist>
             <directory suffix=".php">src</directory>
@@ -31,4 +28,9 @@
             <directory>vendor</directory>
         </blacklist>
     </filter>
+
+    <logging>
+        <log type="coverage-clover" target="build/logs/clover.xml"/>
+    </logging>
+
 </phpunit>
