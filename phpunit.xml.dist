@@ -15,9 +15,9 @@
     </php>
     <testsuites>
         <testsuite name="all">
-            <file>tests/Keboola/ForecastioAugmentation/UserStorageTest.php</file>
-            <file>tests/Keboola/ForecastioAugmentation/AugmentationTest.php</file>
-            <file>tests/Keboola/ForecastioAugmentation/FunctionalTest.php</file>
+            <file>tests/Keboola/ForecastIoAugmentation/UserStorageTest.php</file>
+            <file>tests/Keboola/ForecastIoAugmentation/AugmentationTest.php</file>
+            <file>tests/Keboola/ForecastIoAugmentation/FunctionalTest.php</file>
         </testsuite>
     </testsuites>
     <filter>
