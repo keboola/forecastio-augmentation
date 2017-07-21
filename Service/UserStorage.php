@@ -83,7 +83,7 @@ class UserStorage
         // Get from SAPI
         $downloadedFile = $this->temp->createTmpFile();
         $params = array(
-            'format' => 'escaped',
+            'format' => 'rfc',
             'columns' => is_array($columns)? $columns : array($columns)
         );
         try {
@@ -106,9 +106,18 @@ class UserStorage
             throw $e;
         }
 
+        // As a quickfix, we download rfc csv from SAPI and convert it to escaped csv
+        $escapedFile = $this->temp->createTmpFile();
+        $escapedCsv = fopen($escapedFile->getRealPath(), "w");
+        $csv = new CsvFile($downloadedFile->getRealPath());
+        foreach ($csv as $row) {
+            fputcsv($escapedCsv, $row);
+        }
+        fclose($escapedCsv);
+
         // Deduplicate data
         $processedFile = $this->temp->createTmpFile();
-        $process = new Process(sprintf('sed -e "1d" %s | sort | uniq > %s', $downloadedFile->getRealPath(), $processedFile->getRealPath()));
+        $process = new Process(sprintf('sed -e "1d" %s | sort | uniq > %s', $escapedFile->getRealPath(), $processedFile->getRealPath()));
         $process->setTimeout(null);
         $process->run();
         $error = $process->getErrorOutput();
