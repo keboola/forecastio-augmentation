@@ -48,6 +48,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     protected $actualTime;
 
     protected $apiCallsCount = 0;
+    protected $notFoundCoordinates = 0;
 
     const TEMPERATURE_UNITS_SI = 'si';
     const TEMPERATURE_UNITS_US = 'us';
@@ -294,13 +295,26 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     ]);
                 }
             } else {
-                $this->eventLogger->log(
-                    sprintf("Conditions for coordinate '%s %s' not found", $c['lat'], $c['lon']),
-                    [],
-                    null,
-                    EventLogger::TYPE_WARN
-                );
+                $this->notFoundCoordinates++;
+                if ($this->notFoundCoordinates <= 10) {
+                    $this->eventLogger->log(
+                        sprintf("Conditions for coordinate '%s %s' not found", $c['lat'], $c['lon']),
+                        [],
+                        null,
+                        EventLogger::TYPE_WARN
+                    );
+                }
             }
+        }
+
+        if ($this->notFoundCoordinates > 10) {
+            $this->eventLogger->log(
+                "Conditions for {$this->notFoundCoordinates} coordinates were not found. You will find first "
+                    . "ten of them in previous events.",
+                [],
+                null,
+                EventLogger::TYPE_WARN
+            );
         }
 
         $this->cacheStorage->logApiCallsCount(
