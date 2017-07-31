@@ -310,7 +310,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         if ($this->notFoundCoordinates > 10) {
             $this->eventLogger->log(
                 "Conditions for {$this->notFoundCoordinates} coordinates were not found. You will find first "
-                    . "ten of them in previous events.",
+                . "ten of them in previous events.",
                 [],
                 null,
                 EventLogger::TYPE_WARN
