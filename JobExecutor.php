@@ -46,6 +46,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     protected $eventLogger;
 
     protected $actualTime;
+    protected $forecastIoKey;
 
     protected $apiCallsCount = 0;
     protected $notFoundCoordinates = 0;
@@ -59,8 +60,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->temp = $temp;
         $this->logger = $logger;
         $this->actualTime = date('Y-m-d 12:00:00');
-
-        $this->forecast = new Forecast($forecastIoKey, 10);
+        $this->forecastIoKey = $forecastIoKey;
     }
 
     /**
@@ -86,6 +86,8 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 }
                 $dataFile = $this->userStorage->getData($configTable['tableId'], $columnsToGet);
 
+                $apiKey = !empty($configTable['apiKey']) ? $configTable['apiKey'] : $this->forecastIoKey;
+                $this->forecast = new Forecast($apiKey, 10);
                 $this->process($configId, $dataFile, $configTable['conditions'], $configTable['units']);
             }
         }

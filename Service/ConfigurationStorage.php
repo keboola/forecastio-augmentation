@@ -52,6 +52,7 @@ class ConfigurationStorage
 
         $conditions = [];
         $units = null;
+        $apiKey = null;
         $tableInfo = $this->storageApiClient->getTable($configTableId);
         foreach ($tableInfo['attributes'] as $attr) {
             switch ($attr['name']) {
@@ -60,6 +61,9 @@ class ConfigurationStorage
                     break;
                 case 'units':
                     $units = $attr['value'];
+                    break;
+                case 'apiKey':
+                    $apiKey = $attr['value'];
                     break;
             }
         }
@@ -102,6 +106,7 @@ class ConfigurationStorage
                 'timeCol' => isset($t['timeCol']) ? $t['timeCol'] : null,
                 'conditions' => !empty($t['conditions']) ? explode(',', $t['conditions']) : $conditions,
                 'units' => !empty($t['units']) ? $t['units'] : $units,
+                'apiKey' => $apiKey
             ];
         }
         return $result;
