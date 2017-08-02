@@ -46,7 +46,9 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     protected $eventLogger;
 
     protected $actualTime;
-    protected $forecastIoKey;
+    protected $defaultForecastIoKey;
+    protected $customForecastIoKey;
+
 
     protected $apiCallsCount = 0;
     protected $notFoundCoordinates = 0;
@@ -60,7 +62,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->temp = $temp;
         $this->logger = $logger;
         $this->actualTime = date('Y-m-d 12:00:00');
-        $this->forecastIoKey = $forecastIoKey;
+        $this->defaultForecastIoKey = $forecastIoKey;
     }
 
     /**
@@ -86,7 +88,10 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 }
                 $dataFile = $this->userStorage->getData($configTable['tableId'], $columnsToGet);
 
-                $apiKey = !empty($configTable['apiKey']) ? $configTable['apiKey'] : $this->forecastIoKey;
+                if (!empty($configTable['apiKey'])) {
+                    $this->customForecastIoKey = $configTable['apiKey'];
+                }
+                $apiKey = !empty($this->customForecastIoKey) ? $this->customForecastIoKey : $this->defaultForecastIoKey;
                 $this->forecast = new Forecast($apiKey, 10);
                 $this->process($configId, $dataFile, $configTable['conditions'], $configTable['units']);
             }
@@ -140,13 +145,15 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             );
         }
 
-        $this->cacheStorage->logApiCallsCount(
-            $this->job->getProject()['id'],
-            $this->job->getProject()['name'],
-            $this->job->getToken()['id'],
-            $this->job->getToken()['description'],
-            $this->apiCallsCount
-        );
+        if (!$this->customForecastIoKey) {
+            $this->cacheStorage->logApiCallsCount(
+                $this->job->getProject()['id'],
+                $this->job->getProject()['name'],
+                $this->job->getToken()['id'],
+                $this->job->getToken()['description'],
+                $this->apiCallsCount
+            );
+        }
     }
 
     public function processBatch($configId, $coordinates, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
