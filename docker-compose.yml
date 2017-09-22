@@ -2,7 +2,7 @@ version: "2"
 
 services:
 
-  tests:
+  app:
     build: .
     image: keboola/forecastio-augmentation
     tty: true
@@ -12,9 +12,20 @@ services:
       - FORECASTIO_KEY
       - CODECLIMATE_REPO_TOKEN
 
+  dev:
+    image: keboola/forecastio-augmentation
+    tty: true
+    stdin_open: true
+    command: /bin/bash
+    volumes:
+      - .:/code
+    environment:
+      - FORECASTIO_KEY
+      - CODECLIMATE_REPO_TOKEN
+
   tests-with-report:
     extends:
-      service: tests
+      service: app
     volumes:
       - ./.git:/code/.git
     command: sh -c './tests.sh && ./vendor/bin/test-reporter'
