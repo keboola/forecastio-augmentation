@@ -5,7 +5,8 @@
  * @author Jakub Matejka <jakub@keboola.com>
  */
 
-use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Serializer\Encoder\JsonDecode;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
 
 set_error_handler(
     function ($errno, $errstr, $errfile, $errline, array $errcontext) {
@@ -22,7 +23,11 @@ if (!isset($arguments['data'])) {
     print "Data folder not set.";
     exit(1);
 }
-$config = Yaml::parse(file_get_contents("{$arguments['data']}/config.yml"));
+
+$config = (new JsonDecode(true))->decode(
+    file_get_contents("{$arguments['data']}/config.json"),
+    JsonEncoder::FORMAT
+);
 
 if (!file_exists("{$arguments['data']}/out")) {
     mkdir("{$arguments['data']}/out");

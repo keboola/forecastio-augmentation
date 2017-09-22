@@ -9,7 +9,6 @@ namespace Keboola\ForecastIoAugmentation\Tests;
 
 use Keboola\Temp\Temp;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Yaml\Yaml;
 
 class FunctionalTest extends \PHPUnit_Framework_TestCase
 {
@@ -19,7 +18,7 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
         $temp = new Temp();
         $temp->initRunFolder();
 
-        file_put_contents($temp->getTmpFolder() . '/config.yml', Yaml::dump([
+        file_put_contents($temp->getTmpFolder() . '/config.json', json_encode([
             'image_parameters' => [
                 '#api_token' => FORECASTIO_KEY
             ],

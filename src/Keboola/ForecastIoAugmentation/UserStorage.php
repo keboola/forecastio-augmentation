@@ -7,7 +7,6 @@
 namespace Keboola\ForecastIoAugmentation;
 
 use Keboola\Csv\CsvFile;
-use Symfony\Component\Yaml\Yaml;
 
 class UserStorage
 {
@@ -30,7 +29,7 @@ class UserStorage
             $this->file = new CsvFile($this->outputFile);
             $this->file->writeRow(self::$columns);
 
-            file_put_contents("$this->outputFile.manifest", Yaml::dump([
+            file_put_contents("$this->outputFile.manifest", json_encode([
                 'destination' => $this->destination,
                 'incremental' => true,
                 'primary_key' => self::$primaryKey
