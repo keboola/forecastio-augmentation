@@ -1,4 +1,5 @@
 .idea
+.env
 composer.phar
 vendor
 run-test.sh
