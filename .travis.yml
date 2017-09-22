@@ -11,12 +11,8 @@ before_script:
   - docker-compose build tests-with-report
 
 script:
-  - >
-    docker-compose run
-    --rm
-    -e FORECASTIO_KEY=$FORECASTIO_KEY
-    -e CODECLIMATE_REPO_TOKEN=$CODECLIMATE_REPO_TOKEN
-    tests-with-report
+  - docker-compose run --rm tests-with-report
+
 after_success:
   - docker images
 

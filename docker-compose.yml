@@ -8,6 +8,9 @@ services:
     tty: true
     stdin_open: true
     command: ./tests.sh
+    environment:
+      - FORECASTIO_KEY
+      - CODECLIMATE_REPO_TOKEN
 
   tests-with-report:
     extends:
