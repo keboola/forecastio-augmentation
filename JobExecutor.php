@@ -46,8 +46,12 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
     protected $eventLogger;
 
     protected $actualTime;
+    protected $defaultForecastIoKey;
+    protected $customForecastIoKey;
+
 
     protected $apiCallsCount = 0;
+    protected $notFoundCoordinates = 0;
 
     const TEMPERATURE_UNITS_SI = 'si';
     const TEMPERATURE_UNITS_US = 'us';
@@ -58,8 +62,7 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
         $this->temp = $temp;
         $this->logger = $logger;
         $this->actualTime = date('Y-m-d 12:00:00');
-
-        $this->forecast = new Forecast($forecastIoKey, 10);
+        $this->defaultForecastIoKey = $forecastIoKey;
     }
 
     /**
@@ -85,6 +88,11 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                 }
                 $dataFile = $this->userStorage->getData($configTable['tableId'], $columnsToGet);
 
+                if (!empty($configTable['apiKey'])) {
+                    $this->customForecastIoKey = $configTable['apiKey'];
+                }
+                $apiKey = !empty($this->customForecastIoKey) ? $this->customForecastIoKey : $this->defaultForecastIoKey;
+                $this->forecast = new Forecast($apiKey, 10);
                 $this->process($configId, $dataFile, $configTable['conditions'], $configTable['units']);
             }
         }
@@ -126,6 +134,26 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
             $this->eventLogger->log(sprintf('Processed %d queries', (($batchNumber - 1) * $countInBatch) + count($coordinates)));
         }
         fclose($handle);
+
+        if ($this->notFoundCoordinates > 10) {
+            $this->eventLogger->log(
+                "Conditions for {$this->notFoundCoordinates} coordinates were not found. You will find first "
+                . "ten of them in previous events.",
+                [],
+                null,
+                EventLogger::TYPE_WARN
+            );
+        }
+
+        if (!$this->customForecastIoKey) {
+            $this->cacheStorage->logApiCallsCount(
+                $this->job->getProject()['id'],
+                $this->job->getProject()['name'],
+                $this->job->getToken()['id'],
+                $this->job->getToken()['description'],
+                $this->apiCallsCount
+            );
+        }
     }
 
     public function processBatch($configId, $coordinates, $conditions = [], $units = self::TEMPERATURE_UNITS_SI)
@@ -294,21 +322,16 @@ class JobExecutor extends \Keboola\Syrup\Job\Executor
                     ]);
                 }
             } else {
-                $this->eventLogger->log(
-                    sprintf("Conditions for coordinate '%s %s' not found", $c['lat'], $c['lon']),
-                    [],
-                    null,
-                    EventLogger::TYPE_WARN
-                );
+                $this->notFoundCoordinates++;
+                if ($this->notFoundCoordinates <= 10) {
+                    $this->eventLogger->log(
+                        sprintf("Conditions for coordinate '%s %s' not found", $c['lat'], $c['lon']),
+                        [],
+                        null,
+                        EventLogger::TYPE_WARN
+                    );
+                }
             }
         }
-
-        $this->cacheStorage->logApiCallsCount(
-            $this->job->getProject()['id'],
-            $this->job->getProject()['name'],
-            $this->job->getToken()['id'],
-            $this->job->getToken()['description'],
-            $this->apiCallsCount
-        );
     }
 }
