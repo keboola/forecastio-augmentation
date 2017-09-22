@@ -14,35 +14,61 @@ You can get daily or hourly conditions from the API.
 [![Build Status](https://travis-ci.org/keboola/forecastio-augmentation.svg)](https://travis-ci.org/keboola/forecastio-augmentation) [![Code Climate](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/gpa.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation) [![Test Coverage](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/coverage.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation/coverage)
 
 # Source data
-- source tables must contain exactly two columns with latitudes and longitudes or three columns if you want to specify date/time too
+
+- You can select multiple tables in input mapping
+- You have to choose only following columns in the order
+ - latitude -  decimal degrees
+ - longitude -  decimal degrees
+ - date/time -  (optional) date values must have format `yyyy-mm-dd` (e.g. 2015-06-22) to get daily data or `yyyy-mm-dd HH:ii:ss` (e.g. 2015-06-22 14:00:00) to get hourly data
 - you should deduplicate your data to avoid useless exhausting of your credit quota
-- latitudes and longitudes have to be decimal degrees
-- date values must have format `yyyy-mm-dd` (e.g. 2015-06-22) to get daily data or `yyyy-mm-dd HH:ii:ss` (e.g. 2015-06-22 14:00:00) to get hourly data
 
 
-## Configuration
+## Output
+
+- Please specify one table where the output will be stored
+
+## Parameters
 
 - **parameters**
-    - **outputTable** - name of table where the data will be saved
-    - **inputTables** - array of tables where coordinates are to be found, each item must contain:
-        - **tableId** - id of the table in Storage API
-        - **latitude** - name of column containing latitudes
-        - **longitude** - name of column containing longitudes
-        - **time** - (optional) name of column containing date and time, it is current time by default
     - **conditions** (optional) - array of weather conditions to get, you get all by default; see list of possible conditions below
     - **units** (optional) - units of conditions; **si** for metric units by default, other option is **us** for imperials units 
   
-Example:
+## Full Configuration example
 ```
 {
+    "storage": {
+      "input": {
+        "tables": [
+          {
+            "source": "in.c-csv-import.319271550",
+            "destination": "coords.csv",
+            "columns": [
+              "latitude",
+              "longitude"
+            ]
+          }
+        ]
+      },
+      "output": {
+        "tables": [
+          {
+            "source": "output.csv",
+            "destination": "out.c-main.geocoding"
+          }
+        ]
+      }
+    },
     "parameters": {
+      "parameters": {
         "conditions": [
-            "temperature",
-            "pressure",
-            "humidity"
+          "temperature",
+          "pressure",
+          "humidity"
         ],
-        "units": "us"
-}
+        "units": "si"
+      }
+    }
+  }
 ```
 
 ## Supported conditions
