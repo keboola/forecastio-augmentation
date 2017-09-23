@@ -11,7 +11,7 @@ You can get daily or hourly conditions from the API.
 
 ## Status
 
-[![Build Status](https://travis-ci.org/keboola/forecastio-augmentation.svg)](https://travis-ci.org/keboola/forecastio-augmentation) [![Code Climate](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/gpa.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation) [![Test Coverage](https://codeclimate.com/github/keboola/forecastio-augmentation/badges/coverage.svg)](https://codeclimate.com/github/keboola/forecastio-augmentation/coverage)
+[![Build Status](https://travis-ci.org/keboola/forecastio-augmentation.svg)](https://travis-ci.org/keboola/forecastio-augmentation) 
 
 # Source data
 
