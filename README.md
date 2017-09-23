@@ -31,20 +31,20 @@ You can get daily or hourly conditions from the API.
 ## Full Configuration example
 ```
 {
-    "storage": {
-      "input": {
-        "tables": [
-          {
-            "source": "in.c-csv-import.319271550",
-            "destination": "coords.csv",
-            "columns": [
-              "latitude",
-              "longitude"
-            ]
-          }
-        ]
-      }
-    },
+  "storage": {
+    "input": {
+      "tables": [
+        {
+          "source": "in.c-csv-import.coords",
+          "destination": "coords.csv",
+          "columns": [
+            "latitude",
+            "longitude"
+          ]
+        }
+      ]
+    }
+  },
   "parameters": {
     "#apiToken": "YOUR_FORECASTIO_TOKEN",
     "conditions": [
