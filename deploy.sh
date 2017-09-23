@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
 docker pull quay.io/keboola/developer-portal-cli-v2:latest
 export REPOSITORY=`docker run --rm \
   -e KBC_DEVELOPERPORTAL_USERNAME=$KBC_DEVELOPERPORTAL_USERNAME \
