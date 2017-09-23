@@ -14,10 +14,6 @@ class ParametersValidation
             throw new Exception("There is no table configured in input mapping");
         }
 
-        if (!isset($config['storage']['output']['tables']) || ! count($config['storage']['output']['tables'])) {
-            throw new Exception("There is no table configured in output mapping");
-        }
-        
         if (isset($config['parameters']['conditions']) && !is_array($config['parameters']['conditions'])) {
             throw new Exception("Parameter 'conditions' must be array");
         }

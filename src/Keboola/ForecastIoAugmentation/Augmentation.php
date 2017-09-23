@@ -21,12 +21,12 @@ class Augmentation
     /** @var \Forecast */
     protected $api;
 
-    public function __construct($apiKey, $outputFile, $destination)
+    public function __construct($apiKey, $outputFile)
     {
         $this->api = new \Forecast($apiKey, 10);
         $this->actualTime = date('Y-m-d\TH:i:s');
         
-        $this->userStorage = new UserStorage($outputFile, $destination);
+        $this->userStorage = new UserStorage($outputFile);
     }
 
 
