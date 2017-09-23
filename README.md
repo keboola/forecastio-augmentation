@@ -58,17 +58,16 @@ You can get daily or hourly conditions from the API.
         ]
       }
     },
-    "parameters": {
-      "parameters": {
-        "conditions": [
-          "temperature",
-          "pressure",
-          "humidity"
-        ],
-        "units": "si"
-      }
-    }
+  "parameters": {
+    "#apiToken": "YOUR_FORECASTIO_TOKEN",
+    "conditions": [
+      "temperature",
+      "pressure",
+      "humidity"
+    ],
+    "units": "si"
   }
+}
 ```
 
 ## Supported conditions

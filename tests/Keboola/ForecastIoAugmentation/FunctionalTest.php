@@ -19,9 +19,6 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
         $temp->initRunFolder();
 
         file_put_contents($temp->getTmpFolder() . '/config.json', json_encode([
-            'image_parameters' => [
-                '#api_token' => FORECASTIO_KEY
-            ],
             'storage' => [
                 'input' => [
                     'tables' => [
@@ -41,6 +38,7 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
                 ]
             ],
             'parameters' => [
+                '#apiToken' => FORECASTIO_KEY,
                 'conditions' => ['windSpeed']
             ]
         ]));

@@ -40,7 +40,7 @@ try {
     \Keboola\ForecastIoAugmentation\ParametersValidation::validate($config);
 
     $app = new \Keboola\ForecastIoAugmentation\Augmentation(
-        $config['image_parameters']['#api_token'],
+        $config['parameters']['#apiToken'],
         "{$arguments['data']}/out/tables/{$config['storage']['output']['tables'][0]['source']}",
         $config['storage']['output']['tables'][0]['destination']
     );
