@@ -22,11 +22,6 @@ You can get daily or hourly conditions from the API.
  - date/time -  (optional) date values must have format `yyyy-mm-dd` (e.g. 2015-06-22) to get daily data or `yyyy-mm-dd HH:ii:ss` (e.g. 2015-06-22 14:00:00) to get hourly data
 - you should deduplicate your data to avoid useless exhausting of your credit quota
 
-
-## Output
-
-- Please specify one table where the output will be stored
-
 ## Parameters
 
 - **parameters**
@@ -46,14 +41,6 @@ You can get daily or hourly conditions from the API.
               "latitude",
               "longitude"
             ]
-          }
-        ]
-      },
-      "output": {
-        "tables": [
-          {
-            "source": "output.csv",
-            "destination": "out.c-main.geocoding"
           }
         ]
       }
@@ -106,7 +93,7 @@ You can get daily or hourly conditions from the API.
       - **apparentTemperature**: A numerical value representing the apparent (or “feels like”) temperature at the given time in degrees Celsius/Fahrenheit
       
 # Output
-The app will save data to chosen bucket **in.c-ag-forecastio** and tables with same names as are the configurations. Each table will have columns 
+New bucket is created for each configuration with one table `forecast`. The table will have columns 
 `primary,latitude,longitude,date,key,value` and is filled incrementally. Weather conditions are saved as key-value pairs: 
 
 - **primary** - hash of latitude, longitude, date and key used for incremental saving of data

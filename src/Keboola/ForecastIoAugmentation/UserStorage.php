@@ -14,13 +14,11 @@ class UserStorage
     protected static $primaryKey = ['primary'];
 
     protected $outputFile;
-    protected $destination;
     protected $file;
 
-    public function __construct($outputFile, $destination)
+    public function __construct($outputFile)
     {
         $this->outputFile = $outputFile;
-        $this->destination = $destination;
     }
 
     public function save($data)
@@ -30,7 +28,6 @@ class UserStorage
             $this->file->writeRow(self::$columns);
 
             file_put_contents("$this->outputFile.manifest", json_encode([
-                'destination' => $this->destination,
                 'incremental' => true,
                 'primary_key' => self::$primaryKey
             ]));

@@ -28,14 +28,6 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
                         ]
                     ]
                 ],
-                'output' => [
-                    'tables' => [
-                        [
-                            'source' => 'conditions.csv',
-                            'destination' => 'in.c-main.conditions'
-                        ]
-                    ]
-                ]
             ],
             'parameters' => [
                 '#apiToken' => FORECASTIO_KEY,
@@ -55,6 +47,6 @@ class FunctionalTest extends \PHPUnit_Framework_TestCase
             $this->fail($process->getOutput().PHP_EOL.$process->getErrorOutput());
         }
 
-        $this->assertFileExists("{$temp->getTmpFolder()}/out/tables/conditions.csv");
+        $this->assertFileExists("{$temp->getTmpFolder()}/out/tables/forecast.csv");
     }
 }

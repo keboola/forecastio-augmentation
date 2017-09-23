@@ -29,8 +29,7 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
 
         $this->app = new \Keboola\ForecastIoAugmentation\Augmentation(
             FORECASTIO_KEY,
-            $this->temp->getTmpFolder()."/$outputTable",
-            $outputTable
+            $this->temp->getTmpFolder()."/$outputTable"
         );
 
         $this->outputFile = "{$this->temp->getTmpFolder()}/$outputTable";

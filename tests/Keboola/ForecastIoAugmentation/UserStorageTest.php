@@ -19,7 +19,7 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
         $temp->initRunFolder();
         $table = 'in.c-ag-forecastio.forecastio';
 
-        $userStorage = new UserStorage($temp->getTmpFolder()."/$table", $table);
+        $userStorage = new UserStorage($temp->getTmpFolder()."/$table");
         $userStorage->save([
             'primary' => 'key',
             'latitude' => '10.5',
@@ -42,8 +42,6 @@ class UserStorageTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue(file_exists("{$temp->getTmpFolder()}/$table.manifest"));
         $manifest = Yaml::parse(file_get_contents("{$temp->getTmpFolder()}/$table.manifest"));
-        $this->assertArrayHasKey('destination', $manifest);
-        $this->assertEquals($table, $manifest['destination']);
         $this->assertArrayHasKey('incremental', $manifest);
         $this->assertEquals(true, $manifest['incremental']);
         $this->assertArrayHasKey('primary_key', $manifest);

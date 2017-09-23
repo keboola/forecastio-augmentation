@@ -41,8 +41,7 @@ try {
 
     $app = new \Keboola\ForecastIoAugmentation\Augmentation(
         $config['parameters']['#apiToken'],
-        "{$arguments['data']}/out/tables/{$config['storage']['output']['tables'][0]['source']}",
-        $config['storage']['output']['tables'][0]['destination']
+        "{$arguments['data']}/out/tables/forecast.csv"
     );
 
     foreach ($config['storage']['input']['tables'] as $table) {
