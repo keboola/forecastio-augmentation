@@ -10,7 +10,6 @@ services:
     command: ./tests.sh
     environment:
       - FORECASTIO_KEY
-      - CODECLIMATE_REPO_TOKEN
 
   dev:
     image: keboola/forecastio-augmentation
@@ -21,11 +20,3 @@ services:
       - .:/code
     environment:
       - FORECASTIO_KEY
-      - CODECLIMATE_REPO_TOKEN
-
-  tests-with-report:
-    extends:
-      service: app
-    volumes:
-      - ./.git:/code/.git
-    command: sh -c './tests.sh && ./vendor/bin/test-reporter'
