@@ -1,16 +1,16 @@
-FROM php:7.0
+FROM php:7.1-alpine
 MAINTAINER Jakub Matejka <jakub@keboola.com>
 
-ENV DEBIAN_FRONTEND noninteractive
+RUN apk add --no-cache wget git unzip gzip
 
-RUN apt-get update && apt-get install unzip git -y
-RUN cd && curl -sS https://getcomposer.org/installer | php && ln -s /root/composer.phar /usr/local/bin/composer
-RUN pecl install xdebug && docker-php-ext-enable xdebug
+COPY . /code/
+WORKDIR /code/
 
+RUN ./composer.sh \
+  && rm composer.sh \
+  && mv composer.phar /usr/local/bin/composer \
+  && composer install --no-interaction \
+  && apk del wget git unzip
 ADD . /code
-
-RUN cd /code && composer install --prefer-dist --no-interaction
-
-WORKDIR /code
 
 CMD php ./src/run.php --data=/data
