@@ -36,12 +36,12 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
         copy(__DIR__ . '/data.csv', $this->temp->getTmpFolder() . '/data1.csv');
     }
 
-    public function testAugmentationForDefinedDates()
+    public function testAugmentationForDefinedDatesWithDailyGranularity()
     {
-        $this->app->process($this->temp->getTmpFolder() . '/data1.csv', ['temperature', 'windSpeed']);
+        $this->app->process($this->temp->getTmpFolder() . '/data1.csv', ['temperatureMax', 'windSpeed']);
         $this->assertFileExists($this->outputFile);
         $data = new CsvFile($this->outputFile);
-        $this->assertCount(8, $data);
+        $this->assertCount(7, $data);
         $location1Count = 0;
         $location2Count = 0;
         foreach ($data as $row) {
@@ -52,7 +52,32 @@ class AugmentationTest extends \PHPUnit_Framework_TestCase
                 $location2Count++;
             }
         }
-        $this->assertEquals(5, $location1Count);
+        $this->assertEquals(4, $location1Count);
         $this->assertEquals(2, $location2Count);
+    }
+
+    public function testAugmentationForDefinedDatesWithDailyHourly()
+    {
+        $this->app->process(
+            $this->temp->getTmpFolder() . '/data1.csv',
+            ['temperature', 'windSpeed'],
+            Augmentation::TEMPERATURE_UNITS_SI,
+            Augmentation::GRANULARITY_HOURLY
+        );
+        $this->assertFileExists($this->outputFile);
+        $data = new CsvFile($this->outputFile);
+        $this->assertCount(1 + 24 * 3 * 2, $data);
+        $location1Count = 0;
+        $location2Count = 0;
+        foreach ($data as $row) {
+            if ($row[1] == 49.191 && $row[2] == 16.611) {
+                $location1Count++;
+            }
+            if ($row[1] == 50.071 && $row[2] == 14.423) {
+                $location2Count++;
+            }
+        }
+        $this->assertEquals(96, $location1Count);
+        $this->assertEquals(48, $location2Count);
     }
 }
