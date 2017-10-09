@@ -13,6 +13,13 @@ class Augmentation
     const TEMPERATURE_UNITS_SI = 'si';
     const TEMPERATURE_UNITS_US = 'us';
 
+    const GRANULARITY_HOURLY = 'hourly';
+    const  GRANULARITY_DAILY = 'daily';
+
+    const COL_LATITUDE = 0;
+    const COL_LONGITUDE = 1;
+    const COL_DATE = 2;
+
     protected $actualTime;
 
     /** @var UserStorage */
@@ -33,7 +40,8 @@ class Augmentation
     public function process(
         $dataFile,
         array $conditions = [],
-        $units = self::TEMPERATURE_UNITS_SI
+        $units = self::TEMPERATURE_UNITS_SI,
+        $granularity = self::GRANULARITY_DAILY
     ) {
         $csvFile = new \Keboola\Csv\CsvFile($dataFile);
 
@@ -45,7 +53,7 @@ class Augmentation
                 continue;
             }
             try {
-                $queries[] = $this->buildQuery($line, $units);
+                $queries[] = $this->buildQuery($line, $units, $granularity);
             } catch (Exception $e) {
                 error_log($e->getMessage());
                 continue;
@@ -53,7 +61,7 @@ class Augmentation
 
             // Run for every 50 lines
             if (count($queries) >= $countInBatch) {
-                $this->processBatch($queries, $conditions);
+                $this->processBatch($queries, $conditions, $granularity);
 
                 $queries = [];
             }
@@ -61,35 +69,35 @@ class Augmentation
 
         if (count($queries)) {
             // run the rest of lines above the highest multiple of 50
-            $this->processBatch($queries, $conditions);
+            $this->processBatch($queries, $conditions, $granularity);
         }
     }
 
-    public function processBatch($queries, array $conditions = [])
+    public function processBatch($queries, array $conditions, $granularity)
     {
         foreach ($this->api->getData($queries) as $r) {
             /** @var \ForecastResponse $r */
-            $data = (array)$r->getRawData();
+            $data = (array) $r->getRawData();
             if (isset($data['error'])) {
                 error_log("Getting conditions for {$data['coords']} on {$data['time']} failed: {$data['error']}");
-            } else {
-                if (isset($data['daily']->data[0])) {
-                    $dailyData = (array)$data['daily']->data[0];
+                continue;
+            }
+            if ($granularity === self::GRANULARITY_DAILY) {
+                $dailyData = (array) $data['daily']->data[0];
+                $this->saveData(
+                    $data['latitude'],
+                    $data['longitude'],
+                    date('Y-m-d', $dailyData['time']),
+                    $dailyData,
+                    $conditions
+                );
+            } elseif ($granularity === self::GRANULARITY_HOURLY) {
+                foreach ($data['hourly']->data as $hourlyData) {
                     $this->saveData(
                         $data['latitude'],
                         $data['longitude'],
-                        date('Y-m-d', $dailyData['time']),
-                        $dailyData,
-                        $conditions
-                    );
-                }
-                if (isset($data['currently'])) {
-                    $currentlyData = (array)$data['currently'];
-                    $this->saveData(
-                        $data['latitude'],
-                        $data['longitude'],
-                        date('Y-m-d H:i:s', $currentlyData['time']),
-                        $currentlyData,
+                        date('Y-m-d H:i:s', $hourlyData->time),
+                        (array) $hourlyData,
                         $conditions
                     );
                 }
@@ -117,37 +125,40 @@ class Augmentation
     /**
      * Basically analyze validity of coordinates and date
      */
-    protected function buildQuery($q, $units)
+    protected function buildQuery($q, $units, $granularity)
     {
-        if ($q[0] === null || $q[1] === null || (!$q[0] && !$q[1]) || !is_numeric($q[0]) || !is_numeric($q[1])) {
-            throw new Exception("Value '{$q[0]} {$q[1]}' is not valid coordinate");
+        if ($q[self::COL_LATITUDE] === null || $q[self::COL_LONGITUDE] === null || (!$q[self::COL_LATITUDE] && !$q[self::COL_LONGITUDE]) || !is_numeric($q[self::COL_LATITUDE]) || !is_numeric($q[self::COL_LONGITUDE])) {
+            throw new Exception("Value '{$q[self::COL_LATITUDE]} {$q[self::COL_LONGITUDE]}' is not valid coordinate");
         }
 
         $result = [
-            'latitude' => $q[0],
-            'longitude' => $q[1],
+            'latitude' => $q[self::COL_LATITUDE],
+            'longitude' => $q[self::COL_LONGITUDE],
             'units' => $units
         ];
 
-        if (!empty($q[2])) {
-            if (preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $q[2])) {
-                if (substr($q[2], 0, 10) > date('Y-m-d')) {
-                    throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' lies in future");
+        switch ($granularity) {
+            case self::GRANULARITY_DAILY:
+                $result['exclude'] = 'currently,minutely,hourly,alerts,flags';
+                break;
+            case self::GRANULARITY_HOURLY:
+                $result['exclude'] = 'currently,minutely,daily,alerts,flags';
+                break;
+            default:
+                throw new Exception("Granularity {$granularity} is not valid.");
+        }
+
+        if (!empty($q[self::COL_DATE])) {
+            if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $q[self::COL_DATE])) {
+                if ($q[self::COL_DATE] > date('Y-m-d')) {
+                    throw new Exception("Date '{$q[self::COL_DATE]}' for coordinate '{$q[self::COL_LATITUDE]} {$q[self::COL_LONGITUDE]}' lies in future");
                 }
-                $result['time'] = str_replace(' ', 'T', $q[2]);
-                $result['exclude'] = 'minutely,daily,alerts,flags';
-            } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $q[2])) {
-                if ($q[2] > date('Y-m-d')) {
-                    throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' lies in future");
-                }
-                $result['time'] = "{$q[2]}T12:00:00";
-                $result['exclude'] = 'currently,minutely,alerts,flags';
+                $result['time'] = "{$q[self::COL_DATE]}T12:00:00";
             } else {
-                throw new Exception("Date '{$q[2]}' for coordinate '{$q[0]} {$q[1]}' is not valid");
+                throw new Exception("Date '{$q[self::COL_DATE]}' for coordinate '{$q[self::COL_LATITUDE]} {$q[self::COL_LONGITUDE]}' is not valid");
             }
         } else {
             $result['time'] = $this->actualTime;
-            $result['exclude'] = 'minutely,daily,alerts,flags';
         }
 
         return $result;

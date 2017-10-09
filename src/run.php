@@ -52,7 +52,8 @@ try {
         $app->process(
             "{$arguments['data']}/in/tables/{$table['destination']}",
             isset($config['parameters']['conditions']) ? $config['parameters']['conditions'] : [],
-            isset($config['parameters']['units']) ? $config['parameters']['units'] : null
+            isset($config['parameters']['units']) ? $config['parameters']['units'] : null,
+            isset($config['parameters']['granularity']) ? $config['parameters']['granularity'] : \Keboola\ForecastIoAugmentation\Augmentation::GRANULARITY_DAILY
         );
     }
 

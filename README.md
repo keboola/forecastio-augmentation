@@ -19,7 +19,7 @@ You can get daily or hourly conditions from the API.
 - You have to choose only following columns in the order
  - latitude -  decimal degrees
  - longitude -  decimal degrees
- - date/time -  (optional) date values must have format `yyyy-mm-dd` (e.g. 2015-06-22) to get daily data or `yyyy-mm-dd HH:ii:ss` (e.g. 2015-06-22 14:00:00) to get hourly data
+ - date -  (optional) date values must have format `yyyy-mm-dd` (e.g. 2015-06-22)
 - you should deduplicate your data to avoid useless exhausting of your credit quota
 
 ## Parameters
@@ -27,7 +27,7 @@ You can get daily or hourly conditions from the API.
 - **parameters**
     - **conditions** (optional) - array of weather conditions to get, you get all by default; see list of possible conditions below
     - **units** (optional) - units of conditions; **si** for metric units by default, other option is **us** for imperials units 
-  
+    - **granularity** (optional) - `daily` or `hourly`. `daily` is default.
 ## Full Configuration example
 ```
 {
