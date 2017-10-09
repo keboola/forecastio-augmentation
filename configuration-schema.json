@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "title": "Parameters",
+  "required": [
+    "#apiToken",
+    "units",
+    "granularity"
+  ],
+  "properties": {
+    "#apiToken": {
+      "type": "string",
+      "title": "API Secret Key",
+      "format": "password",
+      "default": "",
+      "minLength": 1,
+      "description": "API Secret key provided by https://darksky.net/dev/account",
+      "propertyOrder": 1
+    },
+    "units": {
+      "enum": [
+        "si",
+        "us"
+      ],
+      "type": "string",
+      "title": "Units",
+      "default": "si",
+      "description": "Units of conditions.",
+      "propertyOrder": 2
+    },
+    "granularity": {
+      "enum": [
+        "daily",
+        "hourly"
+      ],
+      "type": "string",
+      "title": "Granularity",
+      "default": "daily",
+      "description": "Forecast granularity.",
+      "propertyOrder": 3
+    }
+  }
+}
