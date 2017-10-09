@@ -32,7 +32,7 @@ class Forecast
 
   private $_api_key;
   private $_threads; // multi cURL simultaneous requests
-  const   API_URL = 'https://api.forecast.io/forecast/';
+  const   API_URL = 'https://api.darksky.net/forecast/';
 
   /**
    * Create Forecast object
